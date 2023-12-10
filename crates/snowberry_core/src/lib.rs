@@ -1,8 +1,10 @@
 mod branch;
+mod tree;
 
 use std::marker::PhantomData;
 
 pub use branch::Branch;
+use tree::{BranchInfo, Tree};
 
 pub struct DescConstruct<F: FnOnce(Inputs, Params), Inputs, Params> {
     phantom: PhantomData<Params>,
@@ -53,15 +55,18 @@ impl<F: FnOnce(Inputs, Params), Inputs, Params> Construct for DescConstruct<F, I
     }
 }
 
-pub struct Snowberry {}
+pub struct Snowberry {
+    tree: Tree,
+}
 
 impl Snowberry {
     pub fn new() -> Self {
-        Self {}
+        Self { tree: Tree::new() }
     }
 
     pub fn add_root(&mut self, construct: impl Construct) -> &mut Self {
         construct.build();
+        self.tree.insert(BranchInfo { children: vec![] });
         self
     }
 }
