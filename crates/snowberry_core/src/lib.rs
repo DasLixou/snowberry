@@ -4,46 +4,52 @@ use std::marker::PhantomData;
 
 pub use branch::Branch;
 
-pub trait ConstructFn<Params>: Sized {
-    fn build(self);
-    fn construct(self) -> DescConstruct<Self, Params>;
+pub struct DescConstruct<F: FnOnce(Inputs, Params), Inputs, Params> {
+    phantom: PhantomData<Params>,
+    inputs: Inputs,
+    params: Params, // TODO: make them auto generated
+    f: F,
 }
 
-pub struct DescConstruct<F, Params>(F, PhantomData<Params>);
+pub trait Constructable<Inputs, Params>: FnOnce(Inputs, Params) + Sized {
+    fn construct(self, inputs: Inputs) -> DescConstruct<Self, Inputs, Params>;
+}
+
+impl<F, Inputs> Constructable<Inputs, ()> for F
+where
+    F: FnOnce(Inputs, ()),
+{
+    fn construct(self, inputs: Inputs) -> DescConstruct<Self, Inputs, ()> {
+        DescConstruct {
+            phantom: PhantomData,
+            inputs,
+            params: (),
+            f: self,
+        }
+    }
+}
+
+impl<F, Inputs> Constructable<Inputs, Branch> for F
+where
+    F: FnOnce(Inputs, Branch),
+{
+    fn construct(self, inputs: Inputs) -> DescConstruct<Self, Inputs, Branch> {
+        DescConstruct {
+            phantom: PhantomData,
+            inputs,
+            params: Branch {},
+            f: self,
+        }
+    }
+}
 
 pub trait Construct {
     fn build(self);
 }
 
-impl<F> ConstructFn<()> for F
-where
-    F: FnOnce(),
-{
+impl<F: FnOnce(Inputs, Params), Inputs, Params> Construct for DescConstruct<F, Inputs, Params> {
     fn build(self) {
-        self()
-    }
-
-    fn construct(self) -> DescConstruct<Self, ()> {
-        DescConstruct(self, PhantomData)
-    }
-}
-
-impl<F> ConstructFn<(Branch,)> for F
-where
-    F: FnOnce(Branch),
-{
-    fn build(self) {
-        self(Branch {})
-    }
-
-    fn construct(self) -> DescConstruct<Self, (Branch,)> {
-        DescConstruct(self, PhantomData)
-    }
-}
-
-impl<Params, F: ConstructFn<Params>> Construct for DescConstruct<F, Params> {
-    fn build(self) {
-        self.0.build()
+        (self.f)(self.inputs, self.params)
     }
 }
 
