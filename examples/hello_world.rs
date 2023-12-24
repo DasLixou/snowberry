@@ -7,6 +7,7 @@ fn main() {
 fn content(label: &str, mut branch: Branch) {
     println!("{label}");
     branch.add_child(child.construct(()));
+    println!("back in content");
 }
 
 fn child(_: (), _: ()) {

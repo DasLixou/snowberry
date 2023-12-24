@@ -1,57 +1,48 @@
 mod branch;
+mod construct_param;
 mod tree;
 
 use std::marker::PhantomData;
 
 pub use branch::Branch;
-use tree::{BranchInfo, Tree};
+use construct_param::ConstructParam;
+use tree::{BranchIdx, Tree};
 
-pub struct DescConstruct<F: FnOnce(Inputs, Params), Inputs, Params> {
+pub struct DescConstruct<C: Constructable<Inputs, Params>, Inputs, Params: ConstructParam> {
     phantom: PhantomData<Params>,
     inputs: Inputs,
-    params: Params, // TODO: make them auto generated
-    f: F,
+    constructable: C,
 }
 
-pub trait Constructable<Inputs, Params>: FnOnce(Inputs, Params) + Sized {
+pub trait Constructable<Inputs, Params: ConstructParam>:
+    FnOnce(Inputs, Params) + FnOnce(Inputs, Params::Param<'_>) + Sized
+{
     fn construct(self, inputs: Inputs) -> DescConstruct<Self, Inputs, Params>;
 }
 
-impl<F, Inputs> Constructable<Inputs, ()> for F
+impl<F, Inputs, P1: ConstructParam> Constructable<Inputs, P1> for F
 where
-    F: FnOnce(Inputs, ()),
+    F: FnOnce(Inputs, P1) + FnOnce(Inputs, P1::Param<'_>),
 {
-    fn construct(self, inputs: Inputs) -> DescConstruct<Self, Inputs, ()> {
+    fn construct(self, inputs: Inputs) -> DescConstruct<Self, Inputs, P1> {
         DescConstruct {
             phantom: PhantomData,
             inputs,
-            params: (),
-            f: self,
-        }
-    }
-}
-
-impl<F, Inputs> Constructable<Inputs, Branch> for F
-where
-    F: FnOnce(Inputs, Branch),
-{
-    fn construct(self, inputs: Inputs) -> DescConstruct<Self, Inputs, Branch> {
-        DescConstruct {
-            phantom: PhantomData,
-            inputs,
-            params: Branch {},
-            f: self,
+            constructable: self,
         }
     }
 }
 
 pub trait Construct {
-    fn build(self);
+    fn build(self, tree: &Tree, idx: BranchIdx);
 }
 
-impl<F: FnOnce(Inputs, Params), Inputs, Params> Construct for DescConstruct<F, Inputs, Params> {
-    fn build(self) {
-        (self.f)(self.inputs, self.params)
+impl<C: Constructable<Inputs, Params>, Inputs, Params: ConstructParam> Construct
+    for DescConstruct<C, Inputs, Params>
+{
+    fn build(self, tree: &Tree, idx: BranchIdx) {
+        let params = Params::bake_param(tree, idx);
+        (self.constructable)(self.inputs, params);
     }
 }
 
@@ -65,8 +56,8 @@ impl Snowberry {
     }
 
     pub fn add_root(&mut self, construct: impl Construct) -> &mut Self {
-        construct.build();
-        self.tree.insert(BranchInfo { children: vec![] });
+        let idx = self.tree.new_entry(); // TODO: can we make this with &mut self pls?
+        construct.build(&self.tree, idx);
         self
     }
 }
