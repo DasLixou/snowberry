@@ -1,21 +1,29 @@
-use std::{marker::PhantomData, ops::AddAssign};
+use std::ops::AddAssign;
 
 use crate::Event;
 
+type BoxedSubscriber<E> = Box<dyn Fn(E)>;
+
 pub struct Publisher<E: Event> {
-    phantom: PhantomData<E>,
+    subscribers: Vec<BoxedSubscriber<E>>,
 }
 
 impl<E: Event> Publisher<E> {
     pub fn new() -> Self {
         Self {
-            phantom: PhantomData,
+            subscribers: Vec::new(),
         }
     }
 
-    pub fn publish(&self, _event: E) {}
+    pub fn publish(&self, event: E) {
+        for sub in &self.subscribers {
+            (sub)(event.clone());
+        }
+    }
 }
 
-impl<E: Event> AddAssign<()> for Publisher<E> {
-    fn add_assign(&mut self, _rhs: ()) {}
+impl<E: Event, F: Fn(E) + 'static> AddAssign<F> for Publisher<E> {
+    fn add_assign(&mut self, rhs: F) {
+        self.subscribers.push(Box::new(rhs));
+    }
 }

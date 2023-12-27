@@ -10,9 +10,11 @@ struct MyEvent;
 impl Event for MyEvent {}
 
 fn content(cx: &BuildContext) {
-    let mut publisher = Publisher::new();
-    publisher += ();
-    publisher.publish(MyEvent);
+    let mut on_click = Publisher::new();
+    on_click += |_e| {
+        println!("Pressed");
+    };
+    on_click.publish(MyEvent);
 
     label(cx, "Hello, world!");
 }
