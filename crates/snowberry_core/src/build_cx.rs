@@ -1,5 +1,5 @@
-use crate::Snowberry;
+use type_map::TypeMap;
 
 pub struct BuildContext<'s> {
-    pub snowberry: &'s mut Snowberry,
+    pub global_resources: &'s mut TypeMap,
 }
