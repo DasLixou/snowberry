@@ -1,15 +1,13 @@
-use snowberry::core::{Branch, Constructable, Snowberry};
+use snowberry::core::{BuildContext, Snowberry};
 
 fn main() {
-    Snowberry::new().add_root(content.construct("Hello, world!"));
+    Snowberry::new().run(content);
 }
 
-fn content(label: &str, mut branch: Branch) {
-    println!("{label}");
-    branch.add_child(child.construct(()));
-    println!("back in content");
+fn content(cx: &BuildContext) {
+    label(cx, "Hello, world!");
 }
 
-fn child(_: (), _: ()) {
-    println!("Child :>")
+fn label(_cx: &BuildContext, text: &str) {
+    println!("{text}");
 }
