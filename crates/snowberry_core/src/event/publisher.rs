@@ -1,6 +1,6 @@
 use std::ops::AddAssign;
 
-use crate::Event;
+use super::Event;
 
 type BoxedSubscriber<'s, E> = Box<dyn Fn(E) + 's>;
 

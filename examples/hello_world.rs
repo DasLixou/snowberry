@@ -1,7 +1,9 @@
 use std::cell::RefCell;
 
-use snowberry::core::{Context, Snowberry};
-use snowberry::event::{Event, Publisher};
+use snowberry::core::{
+    event::{Event, Publisher},
+    Context, Snowberry,
+};
 use snowberry::window::{window, WinitRunner};
 
 fn main() {

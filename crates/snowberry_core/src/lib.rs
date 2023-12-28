@@ -1,3 +1,4 @@
+pub mod event;
 mod runner;
 
 use bumpalo::Bump;
