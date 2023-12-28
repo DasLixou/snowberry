@@ -5,6 +5,7 @@ use snowberry::core::{
     Context, Snowberry,
 };
 use snowberry::window::{window, WinitRunner};
+use snowberry_core::dynamic::Dynamic;
 
 fn main() {
     Snowberry::new().run(WinitRunner, content);
@@ -31,5 +32,9 @@ fn content(cx: Context) {
 }
 
 fn label(_cx: Context, text: &str) {
+    let mut counter = Dynamic::new(0);
+    *counter.get_mut() += 1;
+    *counter.get_mut() += 1;
+
     println!("{text}");
 }
