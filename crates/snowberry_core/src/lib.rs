@@ -2,7 +2,7 @@ mod runner;
 
 pub use runner::*;
 mod build_cx;
-pub use build_cx::BuildContext;
+pub use build_cx::Context;
 use type_map::TypeMap;
 
 pub struct Snowberry {
@@ -18,9 +18,9 @@ impl Snowberry {
 
     pub fn run<F>(mut self, runner: impl Runner, root: F)
     where
-        F: FnOnce(BuildContext),
+        F: FnOnce(Context),
     {
-        root(BuildContext {
+        root(Context {
             global_resources: &mut self.global_resources,
         });
 

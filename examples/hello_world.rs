@@ -1,4 +1,4 @@
-use snowberry::core::{BuildContext, Snowberry};
+use snowberry::core::{Context, Snowberry};
 use snowberry::event::{Event, Publisher};
 use snowberry::window::{window, WinitRunner};
 
@@ -10,7 +10,7 @@ fn main() {
 struct MyEvent;
 impl Event for MyEvent {}
 
-fn content(cx: BuildContext) {
+fn content(cx: Context) {
     window(cx, "My Snowberry UI", |cx| {
         let mut on_click = Publisher::new();
         on_click += |_e| {
@@ -22,6 +22,6 @@ fn content(cx: BuildContext) {
     })
 }
 
-fn label(_cx: BuildContext, text: &str) {
+fn label(_cx: Context, text: &str) {
     println!("{text}");
 }

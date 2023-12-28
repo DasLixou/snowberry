@@ -1,4 +1,4 @@
-use snowberry_core::{BuildContext, Runner, Snowberry};
+use snowberry_core::{Context, Runner, Snowberry};
 use winit::{
     event::{Event, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
@@ -41,7 +41,7 @@ impl Runner for WinitRunner {
     }
 }
 
-pub fn window(cx: BuildContext, title: &str, sub: impl FnOnce(BuildContext)) {
+pub fn window(cx: Context, title: &str, sub: impl FnOnce(Context)) {
     cx.global_resources
         .entry::<Windows>()
         .or_insert_with(Default::default)
