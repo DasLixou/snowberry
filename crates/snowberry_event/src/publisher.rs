@@ -2,13 +2,13 @@ use std::ops::AddAssign;
 
 use crate::Event;
 
-type BoxedSubscriber<E> = Box<dyn Fn(E)>;
+type BoxedSubscriber<'s, E> = Box<dyn Fn(E) + 's>;
 
-pub struct Publisher<E: Event> {
-    subscribers: Vec<BoxedSubscriber<E>>,
+pub struct Publisher<'s, E: Event> {
+    subscribers: Vec<BoxedSubscriber<'s, E>>,
 }
 
-impl<E: Event> Publisher<E> {
+impl<'s, E: Event> Publisher<'s, E> {
     pub fn new() -> Self {
         Self {
             subscribers: Vec::new(),
@@ -22,7 +22,7 @@ impl<E: Event> Publisher<E> {
     }
 }
 
-impl<E: Event, F: Fn(E) + 'static> AddAssign<F> for Publisher<E> {
+impl<'s, E: Event, F: Fn(E) + 's> AddAssign<F> for Publisher<'s, E> {
     fn add_assign(&mut self, rhs: F) {
         self.subscribers.push(Box::new(rhs));
     }
