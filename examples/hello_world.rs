@@ -14,10 +14,11 @@ fn content(cx: Context) {
         let counter = cx.deposit(RefCell::new(0));
 
         let on_click = cx.event();
-        cx.subscribe(on_click, |_e| {
+        let listener = cx.listener(|_e| {
             *counter.borrow_mut() += 1;
             println!("Counter is now {}", counter.borrow());
         });
+        cx.subscribe(on_click, listener);
         cx.publish(on_click, MyEvent);
         cx.publish(on_click, MyEvent);
 
