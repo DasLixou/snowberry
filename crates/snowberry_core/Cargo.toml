@@ -5,4 +5,5 @@ edition = "2021"
 
 [dependencies]
 bumpalo = "3.14.0"
+slotmap = "1.0.7"
 type-map = "0.5.0"

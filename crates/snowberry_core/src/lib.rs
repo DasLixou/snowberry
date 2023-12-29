@@ -1,8 +1,10 @@
 pub mod dynamic;
 pub mod event;
+mod event_map;
 mod runner;
 
 use bumpalo::Bump;
+use event_map::EventMap;
 pub use runner::*;
 mod build_cx;
 pub use build_cx::Context;
@@ -11,6 +13,7 @@ use type_map::TypeMap;
 pub struct Snowberry {
     pub global_resources: TypeMap,
     pub root_bank: Bump,
+    pub events: EventMap,
 }
 
 impl Snowberry {
@@ -18,6 +21,7 @@ impl Snowberry {
         Self {
             global_resources: TypeMap::new(),
             root_bank: Bump::new(),
+            events: EventMap::new(),
         }
     }
 
@@ -28,6 +32,7 @@ impl Snowberry {
         root(Context {
             global_resources: &mut self.global_resources,
             bank: &mut self.root_bank,
+            events: &mut self.events,
         });
 
         runner.run(self);
