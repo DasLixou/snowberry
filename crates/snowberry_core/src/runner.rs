@@ -1,5 +1,9 @@
-use crate::Snowberry;
+use std::error::Error;
 
-pub trait Runner: Sized {
-    fn run(self, snowberry: Snowberry);
+use crate::{app::App, scope::Scope};
+
+pub trait Runner {
+    type Data;
+
+    fn run(&mut self, app: App, root: Box<dyn Scope<Self>>) -> Result<(), Box<dyn Error>>;
 }
