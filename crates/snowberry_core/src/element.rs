@@ -1,10 +1,10 @@
 use crate::{context::Context, runner::Runner};
 
-pub trait Scope<R: Runner> {
+pub trait Element<R: Runner> {
     fn build(&self, cx: Context<R>);
 }
 
-impl<F, R: Runner> Scope<R> for F
+impl<F, R: Runner> Element<R> for F
 where
     F: Fn(Context<R>),
 {
