@@ -7,8 +7,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     App::new().run(WinitRunner, content)
 }
 
-fn content(cx: Context<'_, WinitRunner>) {
-    window(cx, "My Snowberry UI", |_ctx: Context<'_, WinitRunner>| {
-        println!("hey");
-    })
+fn content(cx: Context<'_, '_, WinitRunner>) {
+    window(
+        cx,
+        "My Snowberry UI",
+        |_ctx: Context<'_, '_, WinitRunner>| {
+            println!("hey");
+        },
+    )
 }

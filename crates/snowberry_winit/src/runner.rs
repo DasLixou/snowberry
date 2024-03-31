@@ -3,23 +3,16 @@ use std::error::Error;
 use snowberry_core::{app::App, context::Context, element::Element, runner::Runner, scope::Scope};
 use winit::{
     event::{Event, StartCause, WindowEvent},
-    event_loop::{EventLoopBuilder, EventLoopProxy},
-    window::WindowBuilder,
+    event_loop::{EventLoopBuilder, EventLoopWindowTarget},
 };
-
-#[derive(Debug)]
-pub enum WinitRunnerEvent {
-    CreateWindow(String),
-}
 
 pub struct WinitRunner;
 
 impl Runner for WinitRunner {
-    type Data = EventLoopProxy<WinitRunnerEvent>;
+    type Data<'data> = &'data EventLoopWindowTarget<()>;
 
     fn run(&mut self, _app: App, root: Box<dyn Element<Self>>) -> Result<(), Box<dyn Error>> {
-        let event_loop = EventLoopBuilder::<WinitRunnerEvent>::with_user_event().build()?;
-        let proxy = event_loop.create_proxy();
+        let event_loop = EventLoopBuilder::<()>::with_user_event().build()?;
 
         let mut root_scope = Scope::new();
 
@@ -28,7 +21,7 @@ impl Runner for WinitRunner {
             match event {
                 Event::NewEvents(StartCause::Init) => {
                     root.build(Context {
-                        runner_data: proxy.clone(),
+                        runner_data: elwt,
                         scope: &mut root_scope,
                     });
                     println!("Root was built!");
@@ -39,13 +32,6 @@ impl Runner for WinitRunner {
                         elwt.exit();
                     }
                     _ => {}
-                },
-                Event::UserEvent(winit_runner_event) => match winit_runner_event {
-                    WinitRunnerEvent::CreateWindow(title) => {
-                        let window = WindowBuilder::new().with_title(title).build(&elwt).unwrap();
-                        // TODO: give that back to the window scope
-                        std::mem::forget(window);
-                    }
                 },
                 _ => {}
             }
