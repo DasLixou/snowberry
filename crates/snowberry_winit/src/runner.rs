@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use snowberry_core::{app::App, context::Context, element::Element, runner::Runner};
+use snowberry_core::{app::App, context::Context, element::Element, runner::Runner, scope::Scope};
 use winit::{
     event::{Event, StartCause, WindowEvent},
     event_loop::{EventLoopBuilder, EventLoopProxy},
@@ -21,12 +21,15 @@ impl Runner for WinitRunner {
         let event_loop = EventLoopBuilder::<WinitRunnerEvent>::with_user_event().build()?;
         let proxy = event_loop.create_proxy();
 
+        let mut root_scope = Scope::new();
+
         event_loop.run(move |event, elwt| {
             //println!("{event:?}");
             match event {
                 Event::NewEvents(StartCause::Init) => {
                     root.build(Context {
                         runner_data: proxy.clone(),
+                        scope: &mut root_scope,
                     });
                     println!("Root was built!");
                 }
