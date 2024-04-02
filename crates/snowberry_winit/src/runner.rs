@@ -28,7 +28,9 @@ impl Runner for WinitRunner {
                     let elc = EventLoopContext {
                         window_target: elwt,
                     };
-                    // TODO: is this safe? O.o
+                    // TODO: this should be safe but moved into with_temp and proper lifetime stuff
+                    // - it is safe as long as it can't be removed or otherwise owned with a longer lifetime.
+                    // - just getting is fine because the borrow can't live longer than the return value of with_temp
                     let elc: EventLoopContext<'static> = unsafe { transmute(elc) };
                     resources.with_temp(elc, |resources| {
                         root.build(Context {
