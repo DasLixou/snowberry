@@ -1,4 +1,4 @@
-use std::{error::Error, mem::transmute};
+use std::{collections::HashMap, error::Error, mem::transmute};
 
 use snowberry_core::{
     app::App, context::Context, element::Element, resource::Resources, runner::Runner, scope::Scope,
@@ -6,10 +6,15 @@ use snowberry_core::{
 use winit::{
     event::{Event, StartCause, WindowEvent},
     event_loop::{EventLoopBuilder, EventLoopWindowTarget},
+    window::WindowId,
 };
 
 pub(crate) struct EventLoopContext<'elwt> {
     pub(crate) window_target: &'elwt EventLoopWindowTarget<()>,
+}
+
+pub(crate) struct Windows {
+    pub(crate) event_handler: HashMap<WindowId, Box<dyn Fn(WindowEvent)>>,
 }
 
 pub struct WinitRunner;
@@ -20,6 +25,10 @@ impl Runner for WinitRunner {
 
         let mut root_scope = Scope::new();
         let mut resources = Resources::new();
+
+        resources.insert(Windows {
+            event_handler: HashMap::new(),
+        });
 
         event_loop.run(move |event, elwt| {
             //println!("{event:?}");
@@ -41,13 +50,14 @@ impl Runner for WinitRunner {
 
                     println!("Root was built!");
                 }
-                Event::WindowEvent { event, .. } => match event {
-                    // TODO: send that to the window
-                    WindowEvent::CloseRequested => {
-                        elwt.exit();
+                Event::WindowEvent { window_id, event } => {
+                    let windows = resources.get::<Windows>().unwrap();
+                    if let Some(handler) = windows.event_handler.get(&window_id) {
+                        handler(event);
+                    } else {
+                        eprintln!("Handler for Window {window_id:?} not defined!");
                     }
-                    _ => {}
-                },
+                }
                 _ => {}
             }
         })?;
