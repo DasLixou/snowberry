@@ -42,7 +42,7 @@ impl Runner for WinitRunner {
                     // - just getting is fine because the borrow can't live longer than the return value of with_temp
                     let elc: EventLoopContext<'static> = unsafe { transmute(elc) };
                     resources.with_temp(elc, |resources| {
-                        root.build(Context {
+                        root.build(&mut Context {
                             resources,
                             scope: &mut root_scope,
                         });

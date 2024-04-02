@@ -3,7 +3,7 @@ use winit::window::WindowBuilder;
 
 use crate::{EventLoopContext, Windows};
 
-pub fn window<'scope>(cx: Context<'scope, '_>, title: &'static str, _scope: impl Element) {
+pub fn window<'scope>(cx: &mut Context<'scope, '_>, title: &'static str, _scope: impl Element) {
     let Some(elc) = cx.resources.get_mut::<EventLoopContext>() else {
         eprintln!("Can't get EventLoopContext!");
         return;
