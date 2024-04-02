@@ -14,6 +14,16 @@ impl Resources {
         }
     }
 
+    pub fn with_temp<T: 'static, F>(&mut self, res: T, f: F)
+    where
+        F: FnOnce(&mut Self),
+    {
+        let type_id = TypeId::of::<T>();
+        self.resources.insert(type_id, Box::new(res));
+        f(self);
+        self.resources.remove(&type_id);
+    }
+
     pub fn get<T: 'static>(&self) -> Option<&T> {
         self.resources.get(&TypeId::of::<T>()).map(|any| unsafe {
             // SAFETY: Can only be inserted internal and is should always be correct.

@@ -1,12 +1,16 @@
-use std::error::Error;
+use std::{error::Error, mem::transmute};
 
 use snowberry_core::{
     app::App, context::Context, element::Element, resource::Resources, runner::Runner, scope::Scope,
 };
 use winit::{
     event::{Event, StartCause, WindowEvent},
-    event_loop::EventLoopBuilder,
+    event_loop::{EventLoopBuilder, EventLoopWindowTarget},
 };
+
+pub(crate) struct EventLoopContext<'elwt> {
+    pub(crate) window_target: &'elwt EventLoopWindowTarget<()>,
+}
 
 pub struct WinitRunner;
 
@@ -21,10 +25,18 @@ impl Runner for WinitRunner {
             //println!("{event:?}");
             match event {
                 Event::NewEvents(StartCause::Init) => {
-                    root.build(Context {
-                        resources: &mut resources,
-                        scope: &mut root_scope,
+                    let elc = EventLoopContext {
+                        window_target: elwt,
+                    };
+                    // TODO: is this safe? O.o
+                    let elc: EventLoopContext<'static> = unsafe { transmute(elc) };
+                    resources.with_temp(elc, |resources| {
+                        root.build(Context {
+                            resources,
+                            scope: &mut root_scope,
+                        });
                     });
+
                     println!("Root was built!");
                 }
                 Event::WindowEvent { event, .. } => match event {

@@ -1,10 +1,16 @@
 use snowberry_core::{context::Context, element::Element};
 use winit::window::WindowBuilder;
 
-pub fn window<'scope>(cx: Context<'scope>, title: &'static str, _scope: impl Element) {
-    /*let window = WindowBuilder::new()
+use crate::EventLoopContext;
+
+pub fn window<'scope>(cx: Context<'scope, '_>, title: &'static str, _scope: impl Element) {
+    let Some(elc) = cx.resources.get_mut::<EventLoopContext>() else {
+        eprintln!("Can't get EventLoopContext!");
+        return;
+    };
+    let window = WindowBuilder::new()
         .with_title(title)
-        .build(cx.runner_data)
+        .build(elc.window_target)
         .unwrap();
-    cx.scope.store(window);*/
+    cx.scope.store(window);
 }
