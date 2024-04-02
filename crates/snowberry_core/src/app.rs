@@ -9,10 +9,10 @@ impl App {
         App {}
     }
 
-    pub fn run<R: Runner>(
+    pub fn run(
         self,
-        mut runner: R,
-        root: impl Element<R> + 'static,
+        mut runner: impl Runner,
+        root: impl Element + 'static,
     ) -> Result<(), Box<dyn Error>> {
         runner.run(self, Box::new(root))
     }

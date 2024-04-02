@@ -1,14 +1,14 @@
-use crate::{context::Context, runner::Runner};
+use crate::context::Context;
 
-pub trait Element<R: Runner> {
-    fn build(&self, cx: Context<'_, '_, R>);
+pub trait Element {
+    fn build(&self, cx: Context<'_>);
 }
 
-impl<F, R: Runner> Element<R> for F
+impl<F> Element for F
 where
-    F: Fn(Context<R>),
+    F: Fn(Context),
 {
-    fn build(&self, cx: Context<'_, '_, R>) {
+    fn build(&self, cx: Context<'_>) {
         self(cx)
     }
 }

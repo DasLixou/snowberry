@@ -1,6 +1,6 @@
-use crate::{runner::Runner, scope::Scope};
+use crate::{resource::Resources, scope::Scope};
 
-pub struct Context<'scope, 'data, R: Runner> {
-    pub runner_data: R::Data<'data>,
+pub struct Context<'scope> {
+    pub resources: &'scope mut Resources,
     pub scope: &'scope mut Scope,
 }
