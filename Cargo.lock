@@ -785,6 +785,17 @@ dependencies = [
 [[package]]
 name = "snowberry_core"
 version = "0.1.0"
+dependencies = [
+ "snowberry_core_macros",
+]
+
+[[package]]
+name = "snowberry_core_macros"
+version = "0.1.0"
+dependencies = [
+ "quote",
+ "syn",
+]
 
 [[package]]
 name = "snowberry_winit"

@@ -1,7 +1,12 @@
 use std::{collections::HashMap, error::Error, mem::transmute};
 
 use snowberry_core::{
-    app::App, context::Context, element::Element, resource::Resources, runner::Runner, scope::Scope,
+    app::App,
+    context::Context,
+    element::Element,
+    resource::{Resource, Resources},
+    runner::Runner,
+    scope::Scope,
 };
 use winit::{
     event::{Event, StartCause, WindowEvent},
@@ -9,10 +14,17 @@ use winit::{
     window::WindowId,
 };
 
+// TODO: can we get smth like bevy has for internal macro use? :3
+mod snowberry {
+    pub use snowberry_core as core;
+}
+
+#[derive(Resource)]
 pub(crate) struct EventLoopContext<'elwt> {
     pub(crate) window_target: &'elwt EventLoopWindowTarget<()>,
 }
 
+#[derive(Resource)]
 pub(crate) struct Windows {
     pub(crate) event_handler: HashMap<WindowId, Box<dyn Fn(WindowEvent)>>,
 }
