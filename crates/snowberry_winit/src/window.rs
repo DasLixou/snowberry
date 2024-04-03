@@ -1,5 +1,5 @@
-use snowberry_core::{context::Context, element::Element};
-use winit::window::WindowBuilder;
+use snowberry_core::{context::Context, element::Element, event_station::EventStation};
+use winit::{event::WindowEvent, window::WindowBuilder};
 
 use crate::{EventLoopContext, Windows};
 
@@ -16,14 +16,17 @@ pub fn window<'scope>(cx: &mut Context<'scope, '_>, title: &'static str, _scope:
     let id = window.id();
     cx.scope.store(window);
 
+    let mut station = EventStation::new();
+    station.listen(|event| match event {
+        WindowEvent::CloseRequested => {
+            println!("close me :3")
+        }
+        _ => {}
+    });
+
     let Some(windows) = cx.resources.get_mut::<Windows>() else {
         eprintln!("Can't get Windows resource!");
         return;
     };
-    windows.event_handler.insert(
-        id,
-        Box::new(|event| {
-            println!("Got event {event:?}");
-        }),
-    );
+    windows.event_handler.insert(id, station);
 }

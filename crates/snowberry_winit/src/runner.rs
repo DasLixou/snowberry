@@ -4,6 +4,7 @@ use snowberry_core::{
     app::App,
     context::Context,
     element::Element,
+    event_station::EventStation,
     resource::{Resource, Resources},
     runner::Runner,
     scope::Scope,
@@ -26,7 +27,7 @@ pub(crate) struct EventLoopContext<'elwt> {
 
 #[derive(Resource)]
 pub(crate) struct Windows {
-    pub(crate) event_handler: HashMap<WindowId, Box<dyn Fn(WindowEvent)>>,
+    pub(crate) event_handler: HashMap<WindowId, EventStation<WindowEvent>>,
 }
 
 pub struct WinitRunner;
@@ -64,8 +65,8 @@ impl Runner for WinitRunner {
                 }
                 Event::WindowEvent { window_id, event } => {
                     let windows = resources.get::<Windows>().unwrap();
-                    if let Some(handler) = windows.event_handler.get(&window_id) {
-                        handler(event);
+                    if let Some(station) = windows.event_handler.get(&window_id) {
+                        station.run(event);
                     } else {
                         eprintln!("Handler for Window {window_id:?} not defined!");
                     }
