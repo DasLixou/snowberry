@@ -1,5 +1,7 @@
+use crate::{context::Context, scope::ScopeKey};
+
 pub struct EventStation<E> {
-    listeners: Vec<Box<dyn Fn(&E)>>,
+    pub listeners: Vec<(ScopeKey, Box<dyn Listener<E>>)>,
 }
 
 impl<E> EventStation<E> {
@@ -7,16 +9,40 @@ impl<E> EventStation<E> {
         Self { listeners: vec![] }
     }
 
-    pub fn listen<F>(&mut self, f: F)
+    pub fn listen<L>(&mut self, scope: ScopeKey, l: L)
     where
-        F: Fn(&E) + 'static,
+        L: Listener<E> + 'static,
     {
-        self.listeners.push(Box::new(f));
+        self.listeners.push((scope, Box::new(l)));
+    }
+}
+
+impl<E> Clone for EventStation<E> {
+    fn clone(&self) -> Self {
+        Self {
+            listeners: self
+                .listeners
+                .iter()
+                .map(|(scope, l)| (*scope, l.cloned_box()))
+                .collect(),
+        }
+    }
+}
+
+pub trait Listener<E> {
+    fn run(&self, event: &E, cx: &mut Context<'_, '_>);
+    fn cloned_box(&self) -> Box<dyn Listener<E>>;
+}
+
+impl<E, F> Listener<E> for F
+where
+    F: Fn(&E, &mut Context<'_, '_>) + Clone + 'static,
+{
+    fn run(&self, event: &E, cx: &mut Context<'_, '_>) {
+        self(event, cx);
     }
 
-    pub fn run(&self, event: E) {
-        for listener in &self.listeners {
-            listener(&event)
-        }
+    fn cloned_box(&self) -> Box<dyn Listener<E>> {
+        Box::new(self.clone())
     }
 }

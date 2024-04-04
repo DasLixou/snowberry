@@ -69,7 +69,17 @@ impl Runner for WinitRunner {
                 Event::WindowEvent { window_id, event } => {
                     let windows = resources.get::<Windows>().unwrap();
                     if let Some(station) = windows.event_handler.get(&window_id) {
-                        station.run(event);
+                        let station = station.clone(); // we need to clone in order to pass &mut resources :< is there a better way? resource locking maybe? or RefCells?
+                        for (scope, listener) in &station.listeners {
+                            listener.run(
+                                &event,
+                                &mut Context {
+                                    resources: &mut resources, // TODO: we should also move elc in here when it has a better "safer" api
+                                    scopes: &mut scopes,
+                                    scope: *scope,
+                                },
+                            );
+                        }
                     } else {
                         eprintln!("Handler for Window {window_id:?} not defined!");
                     }
