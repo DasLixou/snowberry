@@ -4,29 +4,32 @@ use winit::{event::WindowEvent, window::WindowBuilder};
 use crate::{EventLoopContext, Windows};
 
 pub fn window<'scope>(cx: &mut Context<'scope, '_>, title: &'static str, _scope: impl Element) {
-    let Some(elc) = cx.resources.get_mut::<EventLoopContext>() else {
-        eprintln!("Can't get EventLoopContext!");
-        return;
-    };
+    cx.sub_scope(|cx: &mut Context<'_, '_>| {
+        let Some(elc) = cx.resources.get_mut::<EventLoopContext>() else {
+            eprintln!("Can't get EventLoopContext!");
+            return;
+        };
 
-    let window = WindowBuilder::new()
-        .with_title(title)
-        .build(elc.window_target)
-        .unwrap();
-    let id = window.id();
-    cx.scope.store(window);
+        let window = WindowBuilder::new()
+            .with_title(title)
+            .build(elc.window_target)
+            .unwrap();
+        let id = window.id();
+        cx.store(window);
 
-    let mut station = EventStation::new();
-    station.listen(|event| match event {
-        WindowEvent::CloseRequested => {
-            println!("close me :3")
-        }
-        _ => {}
+        let mut station = EventStation::new();
+        let s = cx.scope; // currently we have to move it out of cx because the listener has to be 'static for now..
+        station.listen(move |event| match event {
+            WindowEvent::CloseRequested => {
+                println!("TODO: close me :3 (and kill scope {:?})", s)
+            }
+            _ => {}
+        });
+
+        let Some(windows) = cx.resources.get_mut::<Windows>() else {
+            eprintln!("Can't get Windows resource!");
+            return;
+        };
+        windows.event_handler.insert(id, station);
     });
-
-    let Some(windows) = cx.resources.get_mut::<Windows>() else {
-        eprintln!("Can't get Windows resource!");
-        return;
-    };
-    windows.event_handler.insert(id, station);
 }

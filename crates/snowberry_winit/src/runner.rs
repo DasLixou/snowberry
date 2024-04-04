@@ -1,5 +1,6 @@
 use std::{collections::HashMap, error::Error, mem::transmute};
 
+use slotmap::SlotMap;
 use snowberry_core::{
     app::App,
     context::Context,
@@ -7,7 +8,7 @@ use snowberry_core::{
     event_station::EventStation,
     resource::{Resource, Resources},
     runner::Runner,
-    scope::Scope,
+    scope::{Scope, ScopeKey},
 };
 use winit::{
     event::{Event, StartCause, WindowEvent},
@@ -36,8 +37,9 @@ impl Runner for WinitRunner {
     fn run(&mut self, _app: App, root: Box<dyn Element>) -> Result<(), Box<dyn Error>> {
         let event_loop = EventLoopBuilder::<()>::with_user_event().build()?;
 
-        let mut root_scope = Scope::new();
         let mut resources = Resources::new();
+        let mut scopes: SlotMap<ScopeKey, Scope> = SlotMap::with_key();
+        let root_scope = scopes.insert(Scope::new());
 
         resources.insert(Windows {
             event_handler: HashMap::new(),
@@ -57,7 +59,8 @@ impl Runner for WinitRunner {
                     resources.with_temp(elc, |resources| {
                         root.build(&mut Context {
                             resources,
-                            scope: &mut root_scope,
+                            scopes: &mut scopes,
+                            scope: root_scope,
                         });
                     });
 
