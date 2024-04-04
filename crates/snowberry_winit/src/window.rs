@@ -21,9 +21,9 @@ pub fn window<'scope>(cx: &mut Context<'scope, '_>, title: &'static str, _scope:
         let s = cx.scope; // currently we have to move it out of cx because the listener has to be 'static for now..
         station.listen(
             s,
-            move |event: &WindowEvent, _cx: &mut Context<'_, '_>| match event {
+            move |event: &WindowEvent, cx: &mut Context<'_, '_>| match event {
                 WindowEvent::CloseRequested => {
-                    println!("TODO: close me :3 (and kill scope {:?})", s)
+                    cx.close_scope(s);
                 }
                 _ => {}
             },
