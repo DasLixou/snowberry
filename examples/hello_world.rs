@@ -8,10 +8,20 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 
 fn content(cx: &mut Context<'_, '_>) {
-    window(cx, "My Snowberry UI", |_cx: &mut Context<'_, '_>| {
-        println!("hey");
+    window(cx, "My Snowberry UI", |cx: &mut Context<'_, '_>| {
+        println!("I am in the main window");
+        cx.store(TextBomb("MAIN WINDOW KABOOM!"))
     });
-    window(cx, "My Snowberry UI", |_cx: &mut Context<'_, '_>| {
-        println!("hey");
+    window(cx, "Another Window", |cx: &mut Context<'_, '_>| {
+        println!("this is another window");
+        cx.store(TextBomb("pew pew"));
     });
+}
+
+pub struct TextBomb(&'static str);
+
+impl Drop for TextBomb {
+    fn drop(&mut self) {
+        println!("TextBomb dropped '{}'", self.0);
+    }
 }

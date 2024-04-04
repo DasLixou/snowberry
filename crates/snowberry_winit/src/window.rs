@@ -3,7 +3,7 @@ use winit::{event::WindowEvent, window::WindowBuilder};
 
 use crate::{EventLoopContext, Windows};
 
-pub fn window<'scope>(cx: &mut Context<'scope, '_>, title: &'static str, _scope: impl Element) {
+pub fn window<'scope>(cx: &mut Context<'scope, '_>, title: &'static str, element: impl Element) {
     cx.sub_scope(|cx: &mut Context<'_, '_>| {
         let Some(elc) = cx.resources.get_mut::<EventLoopContext>() else {
             eprintln!("Can't get EventLoopContext!");
@@ -35,5 +35,7 @@ pub fn window<'scope>(cx: &mut Context<'scope, '_>, title: &'static str, _scope:
         };
         // TODO: make this insertion "recoverable" - some undo trait maybe?
         windows.event_handler.insert(id, station);
+
+        element.build(cx);
     });
 }
