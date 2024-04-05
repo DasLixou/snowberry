@@ -2,7 +2,7 @@ use std::cell::RefCell;
 use std::error::Error;
 
 use snowberry::core::{app::App, context::Context};
-use snowberry::vello::init_vello;
+use snowberry::vello;
 use snowberry::winit::{window, WinitRunner};
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -10,19 +10,22 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 
 fn content(cx: &mut Context<'_, '_>) {
-    init_vello(cx);
+    vello::init(cx);
 
-    window(cx, "My Snowberry UI", |cx: &mut Context<'_, '_>| {
+    window(cx, "My Snowberry UI", |cx: &mut Context<'_, '_>, window| {
         println!("I am in the main window");
         cx.store(TextBomb("MAIN WINDOW KABOOM!"));
+
+        // currently doesn't compile
+        //let surface = vello::create_surface(cx, window);
+    });
+    window(cx, "Another Window", |cx: &mut Context<'_, '_>, _window| {
+        println!("this is another window");
+        cx.store(TextBomb("pew pew"));
 
         let val = cx.store(RefCell::new(41));
         *val.borrow_mut() += 1;
         println!("The magic number is {}", *val.borrow());
-    });
-    window(cx, "Another Window", |cx: &mut Context<'_, '_>| {
-        println!("this is another window");
-        cx.store(TextBomb("pew pew"));
     });
 }
 

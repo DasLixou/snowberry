@@ -1,9 +1,16 @@
-use snowberry_core::{context::Context, element::Element, event_station::EventStation};
-use winit::{event::WindowEvent, window::WindowBuilder};
+use snowberry_core::{context::Context, event_station::EventStation};
+use winit::{
+    event::WindowEvent,
+    window::{Window, WindowBuilder},
+};
 
 use crate::{EventLoopContext, Windows};
 
-pub fn window<'scope>(cx: &mut Context<'scope, '_>, title: &'static str, element: impl Element) {
+pub fn window<'scope>(
+    cx: &mut Context<'scope, '_>,
+    title: &'static str,
+    element: impl Fn(&mut Context<'_, '_>, &'_ Window),
+) {
     cx.sub_scope(|cx: &mut Context<'_, '_>| {
         let Some(elc) = cx.resources.get_mut::<EventLoopContext>() else {
             eprintln!("Can't get EventLoopContext!");
@@ -15,7 +22,7 @@ pub fn window<'scope>(cx: &mut Context<'scope, '_>, title: &'static str, element
             .build(elc.window_target)
             .unwrap();
         let id = window.id();
-        cx.store(window);
+        let window = cx.store(window);
 
         let mut station = EventStation::new();
         let s = cx.scope; // currently we have to move it out of cx because the listener has to be 'static for now..
@@ -36,6 +43,6 @@ pub fn window<'scope>(cx: &mut Context<'scope, '_>, title: &'static str, element
         // TODO: make this insertion "recoverable" - some undo trait maybe?
         windows.event_handler.insert(id, station);
 
-        element.build(cx);
+        (element)(cx, window);
     });
 }
