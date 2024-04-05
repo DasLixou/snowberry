@@ -1,20 +1,23 @@
+use std::marker::PhantomData;
+
 use slotmap::SlotMap;
 
 use crate::{
     element::Element,
     resource::Resources,
-    scope::{Scope, ScopeKey},
+    scope::{Scope, ScopeKey, ScopeLife},
 };
 
 pub struct Context<'scope, 'call> {
     pub resources: &'call mut Resources,
     pub scopes: &'scope mut SlotMap<ScopeKey, Scope>,
     pub scope: ScopeKey,
+    pub life: ScopeLife<'scope>,
 }
 
 impl<'scope, 'call> Context<'scope, 'call> {
-    pub fn store<T: 'static>(&mut self, val: T) {
-        self.scopes[self.scope].store(val);
+    pub fn store<T: 'static>(&mut self, val: T) -> &'scope T {
+        self.scopes[self.scope].store(self.life, val)
     }
 
     pub fn sub_scope<E>(&mut self, e: E)
@@ -27,6 +30,7 @@ impl<'scope, 'call> Context<'scope, 'call> {
             resources: &mut self.resources,
             scope: key,
             scopes: &mut self.scopes,
+            life: ScopeLife(PhantomData),
         });
     }
 

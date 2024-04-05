@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::error::Error;
 
 use snowberry::core::{app::App, context::Context};
@@ -13,7 +14,11 @@ fn content(cx: &mut Context<'_, '_>) {
 
     window(cx, "My Snowberry UI", |cx: &mut Context<'_, '_>| {
         println!("I am in the main window");
-        cx.store(TextBomb("MAIN WINDOW KABOOM!"))
+        cx.store(TextBomb("MAIN WINDOW KABOOM!"));
+
+        let val = cx.store(RefCell::new(41));
+        *val.borrow_mut() += 1;
+        println!("The magic number is {}", *val.borrow());
     });
     window(cx, "Another Window", |cx: &mut Context<'_, '_>| {
         println!("this is another window");

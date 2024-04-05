@@ -1,4 +1,4 @@
-use std::{collections::HashMap, error::Error, mem::transmute};
+use std::{collections::HashMap, error::Error, marker::PhantomData, mem::transmute};
 
 use slotmap::SlotMap;
 use snowberry_core::{
@@ -8,7 +8,7 @@ use snowberry_core::{
     event_station::EventStation,
     resource::{Resource, Resources},
     runner::Runner,
-    scope::{Scope, ScopeKey},
+    scope::{Scope, ScopeKey, ScopeLife},
 };
 use winit::{
     event::{Event, StartCause, WindowEvent},
@@ -61,6 +61,7 @@ impl Runner for WinitRunner {
                             resources,
                             scopes: &mut scopes,
                             scope: root_scope,
+                            life: ScopeLife(PhantomData),
                         });
                     });
 
@@ -77,6 +78,7 @@ impl Runner for WinitRunner {
                                     resources: &mut resources, // TODO: we should also move elc in here when it has a better "safer" api
                                     scopes: &mut scopes,
                                     scope: *scope,
+                                    life: ScopeLife(PhantomData),
                                 },
                             );
                         }
