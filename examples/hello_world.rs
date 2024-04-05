@@ -1,6 +1,7 @@
 use std::error::Error;
 
 use snowberry::core::{app::App, context::Context};
+use snowberry::vello::init_vello;
 use snowberry::winit::{window, WinitRunner};
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -8,6 +9,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 
 fn content(cx: &mut Context<'_, '_>) {
+    init_vello(cx);
+
     window(cx, "My Snowberry UI", |cx: &mut Context<'_, '_>| {
         println!("I am in the main window");
         cx.store(TextBomb("MAIN WINDOW KABOOM!"))

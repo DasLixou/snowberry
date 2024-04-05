@@ -1293,6 +1293,7 @@ name = "snowberry_vello"
 version = "0.1.0"
 dependencies = [
  "pollster",
+ "snowberry_core",
  "vello",
  "wgpu",
 ]
