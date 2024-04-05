@@ -9,3 +9,4 @@ edition = "2021"
 [dependencies]
 snowberry_core = { path = "crates/snowberry_core" }
 snowberry_winit = { path = "crates/snowberry_winit" }
+snowberry_vello = { path = "crates/snowberry_vello" }
