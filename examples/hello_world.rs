@@ -19,7 +19,13 @@ fn content(cx: &mut Context<'_, '_>) {
             println!("I am in the main window");
             cx.store(TextBomb("MAIN WINDOW KABOOM!"));
 
-            let surface = vello::create_surface(cx, window);
+            let surface = vello::create_surface(
+                cx,
+                window,
+                window.inner_size().width,
+                window.inner_size().height,
+            )
+            .unwrap();
         },
     );
     window(cx, "Another Window", |cx: &mut Context<'_, '_>, _window| {
