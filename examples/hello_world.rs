@@ -12,23 +12,19 @@ fn main() -> Result<(), Box<dyn Error>> {
 fn content(cx: &mut Context<'_, '_>) {
     vello::init(cx);
 
-    window(
-        cx,
-        "My Snowberry UI",
-        |cx: &mut Context<'_, '_>, window: &'_ _| {
-            println!("I am in the main window");
-            cx.store(TextBomb("MAIN WINDOW KABOOM!"));
+    window(cx, "My Snowberry UI", |cx, window| {
+        println!("I am in the main window");
+        cx.store(TextBomb("MAIN WINDOW KABOOM!"));
 
-            let surface = vello::create_surface(
-                cx,
-                window,
-                window.inner_size().width,
-                window.inner_size().height,
-            )
-            .unwrap();
-        },
-    );
-    window(cx, "Another Window", |cx: &mut Context<'_, '_>, _window| {
+        let surface = vello::create_surface(
+            cx,
+            window,
+            window.inner_size().width,
+            window.inner_size().height,
+        )
+        .unwrap();
+    });
+    window(cx, "Another Window", |cx, _window| {
         println!("this is another window");
         cx.store(TextBomb("pew pew"));
 
