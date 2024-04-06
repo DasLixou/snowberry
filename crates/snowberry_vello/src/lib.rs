@@ -1,7 +1,9 @@
+use std::num::NonZeroUsize;
+
 use snowberry_core::{context::Context, resource::Resource};
 use vello::{
     util::{RenderContext, RenderSurface},
-    Renderer,
+    Renderer, RendererOptions,
 };
 use wgpu::SurfaceTarget;
 
@@ -41,4 +43,26 @@ pub fn create_surface<'scope>(
         vc.render_cx
             .create_surface(surface_target, width, height, wgpu::PresentMode::AutoVsync);
     Some(pollster::block_on(surface_future).expect("Error creating surface"))
+}
+
+pub fn prepare_renderer(cx: &mut Context<'_, '_>, surface: &RenderSurface<'_>) {
+    let Some(vc) = cx.resources.get_mut::<VelloContext>() else {
+        eprintln!("VelloContext isn't initialized yet!");
+        return;
+    };
+
+    vc.renderers
+        .resize_with(vc.render_cx.devices.len(), || None);
+    vc.renderers[surface.dev_id].get_or_insert_with(|| {
+        Renderer::new(
+            &vc.render_cx.devices[surface.dev_id].device,
+            RendererOptions {
+                surface_format: Some(surface.format),
+                use_cpu: false,
+                antialiasing_support: vello::AaSupport::all(),
+                num_init_threads: NonZeroUsize::new(1),
+            },
+        )
+        .expect("Couldn't create renderer")
+    });
 }

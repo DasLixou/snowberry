@@ -23,6 +23,7 @@ fn content(cx: &mut Context<'_, '_>) {
             window.inner_size().height,
         )
         .unwrap();
+        vello::prepare_renderer(cx, &surface);
     });
     window(cx, "Another Window", |cx, _window| {
         println!("this is another window");
