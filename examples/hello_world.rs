@@ -2,8 +2,10 @@ use std::cell::RefCell;
 use std::error::Error;
 
 use snowberry::core::{app::App, context::Context};
-use snowberry::vello;
+use snowberry::vello::{self, Scene};
 use snowberry::winit::{window, WinitRunner};
+use vello::kurbo::{Affine, Rect};
+use vello::peniko::Color;
 
 fn main() -> Result<(), Box<dyn Error>> {
     App::new().run(WinitRunner, content)
@@ -24,6 +26,16 @@ fn content(cx: &mut Context<'_, '_>) {
         )
         .unwrap();
         vello::prepare_renderer(cx, &surface);
+
+        let mut scene = Scene::new();
+        scene.fill(
+            vello::peniko::Fill::NonZero,
+            Affine::IDENTITY,
+            Color::CHARTREUSE,
+            None,
+            &Rect::new(0., 0., 20., 50.),
+        );
+        vello::render(cx, &scene, &surface);
     });
     window(cx, "Another Window", |cx, _window| {
         println!("this is another window");
