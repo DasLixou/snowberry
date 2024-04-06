@@ -6,12 +6,12 @@ use winit::{
 
 use crate::{EventLoopContext, Windows};
 
-pub fn window<'scope>(
-    cx: &mut Context<'scope, '_>,
+pub fn window<'scope: 'sub, 'sub>(
+    cx: &'sub mut Context<'scope, '_>,
     title: &'static str,
-    element: impl Fn(&mut Context<'_, '_>, &'_ Window),
+    element: impl Fn(&mut Context<'sub, '_>, &'_ Window),
 ) {
-    cx.sub_scope(|cx: &mut Context<'_, '_>| {
+    cx.sub_scope(|cx: &mut Context<'sub, '_>| {
         let Some(elc) = cx.resources.get_mut::<EventLoopContext>() else {
             eprintln!("Can't get EventLoopContext!");
             return;

@@ -1,14 +1,14 @@
 use crate::context::Context;
 
-pub trait Element {
-    fn build(&self, cx: &mut Context<'_, '_>);
+pub trait Element<'scope> {
+    fn build(&self, cx: &mut Context<'scope, '_>);
 }
 
-impl<F> Element for F
+impl<'scope, F> Element<'scope> for F
 where
-    F: Fn(&mut Context),
+    F: Fn(&mut Context<'scope, '_>),
 {
-    fn build(&self, cx: &mut Context<'_, '_>) {
+    fn build(&self, cx: &mut Context<'scope, '_>) {
         self(cx)
     }
 }

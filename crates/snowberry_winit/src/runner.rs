@@ -34,7 +34,7 @@ pub(crate) struct Windows {
 pub struct WinitRunner;
 
 impl Runner for WinitRunner {
-    fn run(&mut self, _app: App, root: Box<dyn Element>) -> Result<(), Box<dyn Error>> {
+    fn run<'root>(&mut self, _app: App, root: impl Element<'root>) -> Result<(), Box<dyn Error>> {
         let event_loop = EventLoopBuilder::<()>::with_user_event().build()?;
 
         let mut resources = Resources::new();

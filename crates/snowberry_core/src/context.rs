@@ -10,7 +10,7 @@ use crate::{
 
 pub struct Context<'scope, 'call> {
     pub resources: &'call mut Resources,
-    pub scopes: &'scope mut SlotMap<ScopeKey, Scope>,
+    pub scopes: &'call mut SlotMap<ScopeKey, Scope>,
     pub scope: ScopeKey,
     pub life: ScopeLife<'scope>,
 }
@@ -20,9 +20,10 @@ impl<'scope, 'call> Context<'scope, 'call> {
         self.scopes[self.scope].store(self.life, val)
     }
 
-    pub fn sub_scope<E>(&mut self, e: E)
+    pub fn sub_scope<'sub, E>(&'sub mut self, e: E)
     where
-        E: Element,
+        E: Element<'sub>,
+        'scope: 'sub,
     {
         let key = self.scopes.insert(Scope::new());
         self.scopes[self.scope].sub_scopes.push(key);
