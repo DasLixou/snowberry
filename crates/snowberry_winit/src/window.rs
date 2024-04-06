@@ -9,7 +9,7 @@ use crate::{EventLoopContext, Windows};
 pub fn window<'scope: 'sub, 'sub>(
     cx: &'sub mut Context<'scope, '_>,
     title: &'static str,
-    element: impl Fn(&mut Context<'sub, '_>, &'_ Window),
+    element: impl Fn(&mut Context<'sub, '_>, &'sub Window),
 ) {
     cx.sub_scope(|cx: &mut Context<'sub, '_>| {
         let Some(elc) = cx.resources.get_mut::<EventLoopContext>() else {

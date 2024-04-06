@@ -25,7 +25,7 @@ pub fn init(cx: &mut Context<'_, '_>) {
 
 pub fn create_surface<'scope>(
     cx: &mut Context<'scope, '_>,
-    surface_target: impl Into<SurfaceTarget<'scope>>,
+    surface_target: impl Into<SurfaceTarget<'scope>> + 'scope,
 ) {
     let Some(vc) = cx.resources.get_mut::<VelloContext>() else {
         eprintln!("VelloContext isn't initialized yet!");
@@ -34,6 +34,6 @@ pub fn create_surface<'scope>(
 
     let surface_future =
         vc.render_cx
-            .create_surface(surface_target, 0, 0, wgpu::PresentMode::AutoVsync);
+            .create_surface(surface_target, 100, 100, wgpu::PresentMode::AutoVsync);
     let _surface = pollster::block_on(surface_future).expect("Error creating surface");
 }
