@@ -12,7 +12,7 @@ use snowberry_core::{
 };
 use winit::{
     event::{Event, StartCause, WindowEvent},
-    event_loop::{EventLoopBuilder, EventLoopWindowTarget},
+    event_loop::{EventLoopBuilder, EventLoopProxy, EventLoopWindowTarget},
     window::WindowId,
 };
 
@@ -27,6 +27,11 @@ pub(crate) struct EventLoopContext<'elwt> {
 }
 
 #[derive(Resource)]
+pub struct EventQueue {
+    pub proxy: EventLoopProxy<()>,
+}
+
+#[derive(Resource)]
 pub(crate) struct Windows {
     pub(crate) event_handler: HashMap<WindowId, EventStation<WindowEvent>>,
 }
@@ -36,6 +41,7 @@ pub struct WinitRunner;
 impl Runner for WinitRunner {
     fn run<'root>(&mut self, _app: App, root: impl Element<'root>) -> Result<(), Box<dyn Error>> {
         let event_loop = EventLoopBuilder::<()>::with_user_event().build()?;
+        let proxy = event_loop.create_proxy();
 
         let mut resources = Resources::new();
         let mut scopes: SlotMap<ScopeKey, Scope> = SlotMap::with_key();
@@ -44,6 +50,7 @@ impl Runner for WinitRunner {
         resources.insert(Windows {
             event_handler: HashMap::new(),
         });
+        resources.insert(EventQueue { proxy });
 
         event_loop.run(move |event, elwt| {
             //println!("{event:?}");
@@ -85,6 +92,9 @@ impl Runner for WinitRunner {
                     } else {
                         eprintln!("Handler for Window {window_id:?} not defined!");
                     }
+                }
+                Event::UserEvent(_) => {
+                    println!("Got user event!");
                 }
                 _ => {}
             }

@@ -5,6 +5,7 @@ use snowberry::core::{app::App, context::Context};
 use snowberry::vello::{self, Scene};
 use snowberry::winit::{window, WinitRunner};
 use snowberry_core::loader::loader;
+use snowberry_winit::EventQueue;
 use vello::kurbo::{Affine, Rect};
 use vello::peniko::Color;
 
@@ -41,6 +42,16 @@ fn content(cx: &mut Context<'_, '_>) {
         let _toggle = loader(cx, |_cx| {
             println!("later, I want to be toggled :3");
         });
+
+        {
+            let event_queue = cx.resources.get::<EventQueue>().unwrap();
+            event_queue.proxy.send_event(()).unwrap();
+            println!("Sent event!");
+            event_queue.proxy.send_event(()).unwrap();
+            println!("Sent event!");
+            event_queue.proxy.send_event(()).unwrap();
+            println!("Sent event!");
+        }
     });
     window(cx, "Another Window", |cx, _window| {
         println!("this is another window");
