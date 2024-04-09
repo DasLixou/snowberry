@@ -7,14 +7,10 @@ use vello::{
 };
 use wgpu::SurfaceTarget;
 
-// TODO: can we get smth like bevy has for internal macro use? :3
-mod snowberry {
-    pub use snowberry_core as core;
-}
-
 pub use vello::*;
 
 #[derive(Resource)]
+#[snowberry_path = "internal"]
 pub struct VelloContext {
     pub render_cx: RenderContext,
     pub renderers: Vec<Option<Renderer>>,

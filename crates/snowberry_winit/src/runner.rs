@@ -16,22 +16,20 @@ use winit::{
     window::WindowId,
 };
 
-// TODO: can we get smth like bevy has for internal macro use? :3
-mod snowberry {
-    pub use snowberry_core as core;
-}
-
 #[derive(Resource)]
+#[snowberry_path = "internal"]
 pub(crate) struct EventLoopContext<'elwt> {
     pub(crate) window_target: &'elwt EventLoopWindowTarget<()>,
 }
 
 #[derive(Resource)]
+#[snowberry_path = "internal"]
 pub struct EventQueue {
     pub proxy: EventLoopProxy<()>,
 }
 
 #[derive(Resource)]
+#[snowberry_path = "internal"]
 pub(crate) struct Windows {
     pub(crate) event_handler: HashMap<WindowId, EventStation<WindowEvent>>,
 }
