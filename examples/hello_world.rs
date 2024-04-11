@@ -4,6 +4,7 @@ use std::error::Error;
 use snowberry::core::{app::App, context::Context};
 use snowberry::vello::{self, Scene};
 use snowberry::winit::{window, WinitRunner};
+use snowberry_core::event_station::EventStation;
 use snowberry_core::loader::loader;
 use snowberry_winit::EventQueue;
 use vello::kurbo::{Affine, Rect};
@@ -43,15 +44,23 @@ fn content(cx: &mut Context<'_, '_>) {
             println!("later, I want to be toggled :3");
         });
 
-        {
-            let event_queue = cx.resources.get::<EventQueue>().unwrap();
-            event_queue.proxy.send_event(()).unwrap();
-            println!("Sent event!");
-            event_queue.proxy.send_event(()).unwrap();
-            println!("Sent event!");
-            event_queue.proxy.send_event(()).unwrap();
-            println!("Sent event!");
-        }
+        let mut thing = EventStation::new();
+        thing.listen(cx.scope, |e: i32, _cx: &mut Context<'_, '_>| {
+            println!("Hehey {e}!");
+        });
+        let event_queue = cx.resources.get::<EventQueue>().unwrap();
+        event_queue
+            .proxy
+            .send_event(thing.to_erased(1))
+            .unwrap_or_else(|_| panic!());
+        event_queue
+            .proxy
+            .send_event(thing.to_erased(2))
+            .unwrap_or_else(|_| panic!());
+        event_queue
+            .proxy
+            .send_event(thing.to_erased(3))
+            .unwrap_or_else(|_| panic!());
     });
     window(cx, "Another Window", |cx, _window| {
         println!("this is another window");

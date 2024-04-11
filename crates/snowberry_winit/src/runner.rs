@@ -5,7 +5,7 @@ use snowberry_core::{
     app::App,
     context::Context,
     element::Element,
-    event_station::EventStation,
+    event_station::{ErasedEventStation, EventStation},
     resource::{Resource, Resources},
     runner::Runner,
     scope::{Scope, ScopeKey, ScopeLife},
@@ -19,13 +19,13 @@ use winit::{
 #[derive(Resource)]
 #[snowberry_path = "internal"]
 pub(crate) struct EventLoopContext<'elwt> {
-    pub(crate) window_target: &'elwt EventLoopWindowTarget<()>,
+    pub(crate) window_target: &'elwt EventLoopWindowTarget<ErasedEventStation>,
 }
 
 #[derive(Resource)]
 #[snowberry_path = "internal"]
 pub struct EventQueue {
-    pub proxy: EventLoopProxy<()>,
+    pub proxy: EventLoopProxy<ErasedEventStation>,
 }
 
 #[derive(Resource)]
@@ -38,7 +38,7 @@ pub struct WinitRunner;
 
 impl Runner for WinitRunner {
     fn run<'root>(&mut self, _app: App, root: impl Element<'root>) -> Result<(), Box<dyn Error>> {
-        let event_loop = EventLoopBuilder::<()>::with_user_event().build()?;
+        let event_loop = EventLoopBuilder::<ErasedEventStation>::with_user_event().build()?;
         let proxy = event_loop.create_proxy();
 
         let mut resources = Resources::new();
@@ -77,8 +77,12 @@ impl Runner for WinitRunner {
                     if let Some(station) = windows.event_handler.get(&window_id) {
                         let station = station.clone(); // we need to clone in order to pass &mut resources :< is there a better way? resource locking maybe? or RefCells?
                         for (scope, listener) in &station.listeners {
+                            // TODO: is that needed here?
+                            if !scopes.contains_key(*scope) {
+                                continue;
+                            }
                             listener.run(
-                                &event,
+                                event.clone(),
                                 &mut Context {
                                     resources: &mut resources, // TODO: we should also move elc in here when it has a better "safer" api
                                     scopes: &mut scopes,
@@ -91,8 +95,18 @@ impl Runner for WinitRunner {
                         eprintln!("Handler for Window {window_id:?} not defined!");
                     }
                 }
-                Event::UserEvent(_) => {
-                    println!("Got user event!");
+                Event::UserEvent(station) => {
+                    for (scope, listener) in station.listener_calls {
+                        if !scopes.contains_key(scope) {
+                            continue;
+                        }
+                        listener.run(&mut Context {
+                            resources: &mut resources, // TODO: we should also move elc in here when it has a better "safer" api
+                            scopes: &mut scopes,
+                            scope,
+                            life: ScopeLife(PhantomData),
+                        });
+                    }
                 }
                 _ => {}
             }

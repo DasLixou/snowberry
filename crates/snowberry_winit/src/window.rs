@@ -26,15 +26,12 @@ pub fn window<'scope: 'sub, 'sub>(
 
         let mut station = EventStation::new();
         let s = cx.scope; // currently we have to move it out of cx because the listener has to be 'static for now..
-        station.listen(
-            s,
-            move |event: &WindowEvent, cx: &mut Context<'_, '_>| match event {
-                WindowEvent::CloseRequested => {
-                    cx.close_scope(s);
-                }
-                _ => {}
-            },
-        );
+        station.listen(s, move |event, cx: &mut Context<'_, '_>| match event {
+            WindowEvent::CloseRequested => {
+                cx.close_scope(s);
+            }
+            _ => {}
+        });
 
         let Some(windows) = cx.resources.get_mut::<Windows>() else {
             eprintln!("Can't get Windows resource!");
