@@ -4,6 +4,7 @@ use slotmap::SlotMap;
 
 use crate::{
     element::Element,
+    event_station::EventDispatcher,
     resource::Resources,
     scope::{Scope, ScopeKey, ScopeLife},
 };
@@ -13,6 +14,7 @@ pub struct Context<'scope, 'call> {
     pub scopes: &'call mut SlotMap<ScopeKey, Scope>,
     pub scope: ScopeKey,
     pub life: ScopeLife<'scope>,
+    pub event_dispatcher: &'call dyn EventDispatcher,
 }
 
 impl<'scope, 'call> Context<'scope, 'call> {
@@ -32,6 +34,7 @@ impl<'scope, 'call> Context<'scope, 'call> {
             scope: key,
             scopes: &mut self.scopes,
             life: ScopeLife(PhantomData),
+            event_dispatcher: self.event_dispatcher,
         });
     }
 

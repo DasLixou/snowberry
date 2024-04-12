@@ -5,7 +5,7 @@ use snowberry_core::{
     app::App,
     context::Context,
     element::Element,
-    event_station::{ErasedEventStation, EventStation},
+    event_station::{ErasedEventStation, EventDispatcher, EventStation},
     resource::{Resource, Resources},
     runner::Runner,
     scope::{Scope, ScopeKey, ScopeLife},
@@ -24,14 +24,17 @@ pub(crate) struct EventLoopContext<'elwt> {
 
 #[derive(Resource)]
 #[snowberry_path = "internal"]
-pub struct EventQueue {
-    pub proxy: EventLoopProxy<ErasedEventStation>,
-}
-
-#[derive(Resource)]
-#[snowberry_path = "internal"]
 pub(crate) struct Windows {
     pub(crate) event_handler: HashMap<WindowId, EventStation<WindowEvent>>,
+}
+
+pub struct WinitEventDispatcher(EventLoopProxy<ErasedEventStation>);
+impl EventDispatcher for WinitEventDispatcher {
+    fn dispatch(&self, erased_station: ErasedEventStation) {
+        self.0
+            .send_event(erased_station)
+            .unwrap_or_else(|_| panic!("failed to send event :<"));
+    }
 }
 
 pub struct WinitRunner;
@@ -48,7 +51,8 @@ impl Runner for WinitRunner {
         resources.insert(Windows {
             event_handler: HashMap::new(),
         });
-        resources.insert(EventQueue { proxy });
+
+        let mut event_dispatcher = WinitEventDispatcher(proxy);
 
         event_loop.run(move |event, elwt| {
             //println!("{event:?}");
@@ -67,6 +71,7 @@ impl Runner for WinitRunner {
                             scopes: &mut scopes,
                             scope: root_scope,
                             life: ScopeLife(PhantomData),
+                            event_dispatcher: &mut event_dispatcher,
                         });
                     });
 
@@ -88,6 +93,7 @@ impl Runner for WinitRunner {
                                     scopes: &mut scopes,
                                     scope: *scope,
                                     life: ScopeLife(PhantomData),
+                                    event_dispatcher: &mut event_dispatcher,
                                 },
                             );
                         }
@@ -105,6 +111,7 @@ impl Runner for WinitRunner {
                             scopes: &mut scopes,
                             scope,
                             life: ScopeLife(PhantomData),
+                            event_dispatcher: &mut event_dispatcher,
                         });
                     }
                 }

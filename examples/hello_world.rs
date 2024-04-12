@@ -6,7 +6,6 @@ use snowberry::vello::{self, Scene};
 use snowberry::winit::{window, WinitRunner};
 use snowberry_core::event_station::EventStation;
 use snowberry_core::loader::loader;
-use snowberry_winit::EventQueue;
 use vello::kurbo::{Affine, Rect};
 use vello::peniko::Color;
 
@@ -48,19 +47,9 @@ fn content(cx: &mut Context<'_, '_>) {
         thing.listen(cx.scope, |e: i32, _cx: &mut Context<'_, '_>| {
             println!("Hehey {e}!");
         });
-        let event_queue = cx.resources.get::<EventQueue>().unwrap();
-        event_queue
-            .proxy
-            .send_event(thing.to_erased(1))
-            .unwrap_or_else(|_| panic!());
-        event_queue
-            .proxy
-            .send_event(thing.to_erased(2))
-            .unwrap_or_else(|_| panic!());
-        event_queue
-            .proxy
-            .send_event(thing.to_erased(3))
-            .unwrap_or_else(|_| panic!());
+        thing.dispatch(cx, 1);
+        thing.dispatch(cx, 2);
+        thing.dispatch(cx, 3);
     });
     window(cx, "Another Window", |cx, _window| {
         println!("this is another window");

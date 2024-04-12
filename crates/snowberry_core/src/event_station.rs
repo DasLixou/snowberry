@@ -1,5 +1,9 @@
 use crate::{context::Context, scope::ScopeKey};
 
+pub trait EventDispatcher {
+    fn dispatch(&self, erased_station: ErasedEventStation);
+}
+
 pub struct EventStation<E: Clone + 'static> {
     pub listeners: Vec<(ScopeKey, Box<dyn Listener<E>>)>,
 }
@@ -16,7 +20,11 @@ impl<E: Clone + 'static> EventStation<E> {
         self.listeners.push((scope, Box::new(l)));
     }
 
-    pub fn to_erased(&self, event: E) -> ErasedEventStation {
+    pub fn dispatch(&self, cx: &mut Context<'_, '_>, event: E) {
+        cx.event_dispatcher.dispatch(self.to_erased(event));
+    }
+
+    fn to_erased(&self, event: E) -> ErasedEventStation {
         ErasedEventStation {
             listener_calls: self
                 .listeners
