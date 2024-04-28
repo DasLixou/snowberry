@@ -1,7 +1,0 @@
-[package]
-name = "snowberry_arena"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-bumpalo = "3.14.0"

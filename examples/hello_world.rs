@@ -1,35 +1,70 @@
 use std::cell::RefCell;
+use std::error::Error;
 
-use snowberry::core::{dynamic::Dynamic, Context, Snowberry};
-use snowberry::window::{window, WinitRunner};
+use snowberry::core::{app::App, context::Context};
+use snowberry::vello::{self, Scene};
+use snowberry::winit::{window, WinitRunner};
+use snowberry_core::event_station::EventStation;
+use snowberry_core::loader::loader;
+use vello::kurbo::{Affine, Rect};
+use vello::peniko::Color;
 
-fn main() {
-    Snowberry::new().run(WinitRunner, content);
+fn main() -> Result<(), Box<dyn Error>> {
+    App::new().run(WinitRunner, content)
 }
 
-struct MyEvent;
+fn content(cx: &mut Context<'_, '_>) {
+    vello::init(cx);
 
-fn content(cx: Context) {
-    window(cx, "My Snowberry UI", |mut cx| {
-        let counter = cx.deposit(RefCell::new(0));
+    window(cx, "My Snowberry UI", |cx, window| {
+        println!("I am in the main window");
+        cx.store(TextBomb("MAIN WINDOW KABOOM!"));
 
-        let on_click = cx.event();
-        let listener = cx.listener(|_e| {
-            *counter.borrow_mut() += 1;
-            println!("Counter is now {}", counter.borrow());
+        let surface = vello::create_surface(
+            cx,
+            window,
+            window.inner_size().width,
+            window.inner_size().height,
+        )
+        .unwrap();
+        vello::prepare_renderer(cx, &surface);
+
+        let mut scene = Scene::new();
+        scene.fill(
+            vello::peniko::Fill::NonZero,
+            Affine::IDENTITY,
+            Color::CHARTREUSE,
+            None,
+            &Rect::new(0., 0., 20., 50.),
+        );
+        vello::render(cx, &scene, &surface);
+
+        let _toggle = loader(cx, |_cx| {
+            println!("later, I want to be toggled :3");
         });
-        cx.subscribe(on_click, listener);
-        cx.publish(on_click, MyEvent);
-        cx.publish(on_click, MyEvent);
 
-        label(cx, "Hello, world!");
-    })
+        let mut thing = EventStation::new();
+        thing.listen(cx.scope, |e: i32, _cx: &mut Context<'_, '_>| {
+            println!("Hehey {e}!");
+        });
+        thing.dispatch(cx, 1);
+        thing.dispatch(cx, 2);
+        thing.dispatch(cx, 3);
+    });
+    window(cx, "Another Window", |cx, _window| {
+        println!("this is another window");
+        cx.store(TextBomb("pew pew"));
+
+        let val = cx.store(RefCell::new(41));
+        *val.borrow_mut() += 1;
+        println!("The magic number is {}", *val.borrow());
+    });
 }
 
-fn label(_cx: Context, text: &str) {
-    let mut counter = Dynamic::new(0);
-    *counter.get_mut() += 1;
-    *counter.get_mut() += 1;
+pub struct TextBomb(&'static str);
 
-    println!("{text}");
+impl Drop for TextBomb {
+    fn drop(&mut self) {
+        println!("TextBomb dropped '{}'", self.0);
+    }
 }

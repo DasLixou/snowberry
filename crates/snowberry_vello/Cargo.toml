@@ -1,10 +1,13 @@
 [package]
-name = "snowberry_core"
+name = "snowberry_vello"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-slotmap = "1.0.7"
-snowberry_core_macros = { path = "macros" }
+snowberry_core = { path = "../snowberry_core" }
+
+pollster = "0.3.0"
+vello = "0.1.0"
+wgpu = "0.19.3"
