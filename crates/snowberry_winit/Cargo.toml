@@ -9,4 +9,4 @@ edition = "2021"
 snowberry_core = { path = "../snowberry_core" }
 
 slotmap = "1.0.7"
-winit = "0.29.15"
+winit = "0.30.0"
