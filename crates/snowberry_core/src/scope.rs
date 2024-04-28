@@ -22,7 +22,7 @@ impl Scope {
         }
     }
 
-    pub fn store<'scope, T: 'static>(&self, _life: ScopeLife<'scope>, val: T) -> &'scope T {
+    pub fn store<'scope, T: 'scope>(&self, _life: ScopeLife<'scope>, val: T) -> &'scope T {
         let mut store = self.store.borrow_mut();
         let len = store.len();
         store.push(Box::new(val));
