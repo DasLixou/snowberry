@@ -1,5 +1,6 @@
-use std::{any::Any, cell::RefCell, marker::PhantomData};
+use std::marker::PhantomData;
 
+use bumpalo::Bump;
 use slotmap::new_key_type;
 
 new_key_type! {
@@ -10,25 +11,20 @@ new_key_type! {
 pub struct ScopeLife<'scope>(pub PhantomData<&'scope ()>);
 
 pub struct Scope {
-    store: RefCell<Vec<Box<dyn Any>>>,
+    store: Bump,
     pub sub_scopes: Vec<ScopeKey>,
 }
 
 impl Scope {
     pub fn new() -> Self {
         Self {
-            store: RefCell::new(vec![]),
+            store: Bump::new(),
             sub_scopes: vec![],
         }
     }
 
-    pub fn store<'scope, T: 'static>(&self, _life: ScopeLife<'scope>, val: T) -> &'scope T {
-        let mut store = self.store.borrow_mut();
-        let len = store.len();
-        store.push(Box::new(val));
-        drop(store);
-        let store = self.store.borrow();
-        let b = store.get(len).unwrap().downcast_ref::<T>().unwrap();
+    pub fn store<'scope, T: 'scope>(&self, _life: ScopeLife<'scope>, val: T) -> &'scope T {
+        let b = self.store.alloc(val);
         unsafe {
             // TODO: think about safety
             core::mem::transmute(b)

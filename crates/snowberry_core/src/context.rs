@@ -18,7 +18,7 @@ pub struct Context<'scope, 'call> {
 }
 
 impl<'scope, 'call> Context<'scope, 'call> {
-    pub fn store<T: 'static>(&mut self, val: T) -> &'scope T {
+    pub fn store<T: 'scope>(&mut self, val: T) -> &'scope T {
         self.scopes[self.scope].store(self.life, val)
     }
 
