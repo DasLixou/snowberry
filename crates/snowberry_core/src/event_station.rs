@@ -1,23 +1,32 @@
-use crate::{context::Context, scope::ScopeKey};
+use slotmap::{new_key_type, SlotMap};
+
+use crate::{context::Context, event_listener::Listener, scope::ScopeKey};
 
 pub trait EventDispatcher {
     fn dispatch(&self, erased_station: ErasedEventStation);
 }
 
+new_key_type! {
+    pub struct Subscription;
+}
+
 pub struct EventStation<E: Clone + 'static> {
-    pub listeners: Vec<(ScopeKey, Box<dyn Listener<E>>)>,
+    pub listeners: SlotMap<Subscription, (ScopeKey, Box<dyn Listener<E>>)>,
 }
 
 impl<E: Clone + 'static> EventStation<E> {
     pub fn new() -> Self {
-        Self { listeners: vec![] }
+        Self {
+            listeners: SlotMap::with_key(),
+        }
     }
 
-    pub fn listen<L>(&mut self, scope: ScopeKey, l: L)
-    where
-        L: Listener<E> + 'static,
-    {
-        self.listeners.push((scope, Box::new(l)));
+    pub(crate) fn subscribe(&mut self, scope: ScopeKey, l: Box<dyn Listener<E>>) -> Subscription {
+        self.listeners.insert((scope, l))
+    }
+
+    pub(crate) fn unsubscribe(&mut self, subscription: Subscription) {
+        self.listeners.remove(subscription);
     }
 
     pub fn dispatch(&self, cx: &mut Context<'_, '_>, event: E) {
@@ -28,7 +37,7 @@ impl<E: Clone + 'static> EventStation<E> {
         ErasedEventStation {
             listener_calls: self
                 .listeners
-                .iter()
+                .values()
                 .map(|(scope, l)| {
                     let b = l.cloned_box();
                     let e = event.clone();
@@ -41,36 +50,6 @@ impl<E: Clone + 'static> EventStation<E> {
                 })
                 .collect(),
         }
-    }
-}
-
-impl<E: Clone> Clone for EventStation<E> {
-    fn clone(&self) -> Self {
-        Self {
-            listeners: self
-                .listeners
-                .iter()
-                .map(|(scope, l)| (*scope, l.cloned_box()))
-                .collect(),
-        }
-    }
-}
-
-pub trait Listener<E> {
-    fn run(&self, event: E, cx: &mut Context<'_, '_>);
-    fn cloned_box(&self) -> Box<dyn Listener<E>>;
-}
-
-impl<E, F> Listener<E> for F
-where
-    F: Fn(E, &mut Context<'_, '_>) + Clone + 'static,
-{
-    fn run(&self, event: E, cx: &mut Context<'_, '_>) {
-        self(event, cx);
-    }
-
-    fn cloned_box(&self) -> Box<dyn Listener<E>> {
-        Box::new(self.clone())
     }
 }
 
