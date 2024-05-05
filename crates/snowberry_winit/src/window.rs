@@ -1,4 +1,8 @@
-use snowberry_core::{context::Context, event_station::EventStation};
+use std::cell::RefCell;
+
+use snowberry_core::{
+    context::Context, event_listener::EventListener, event_station::EventStation,
+};
 use winit::{event::WindowEvent, window::Window};
 
 use crate::{EventLoopContext, Windows};
@@ -22,20 +26,23 @@ pub fn window<'scope: 'sub, 'sub>(
         let id = window.id();
         let window = cx.store(window);
 
-        let mut station = EventStation::new();
+        let station = cx.store(RefCell::new(EventStation::new()));
         let s = cx.scope; // currently we have to move it out of cx because the listener has to be 'static for now..
-        station.listen(s, move |event, cx: &mut Context<'_, '_>| match event {
+
+        let listener = move |event, cx: &mut Context<'_, '_>| match event {
             WindowEvent::CloseRequested => {
                 cx.close_scope(s);
             }
             _ => {}
-        });
+        };
+        EventListener::new(cx, listener, &[station]);
 
         let Some(windows) = cx.resources.get_mut::<Windows>() else {
             eprintln!("Can't get Windows resource!");
             return;
         };
         // TODO: make this insertion "recoverable" - some undo trait maybe?
+        // TODO: also please a safer variant, thx future me :3
         windows.event_handler.insert(id, station);
 
         (element)(cx, window);

@@ -1,11 +1,17 @@
-use std::{collections::HashMap, error::Error, marker::PhantomData, mem::transmute};
+use std::{
+    cell::{Ref, RefCell},
+    collections::HashMap,
+    error::Error,
+    marker::PhantomData,
+    mem::transmute,
+};
 
 use slotmap::SlotMap;
 use snowberry_core::{
     app::App,
     context::Context,
     element::Element,
-    event_station::{ErasedEventStation, EventDispatcher, EventStation},
+    event_station::{ErasedEventStation, EventDispatcher, EventStation, SubscriptionEntry},
     resource::{Resource, Resources},
     runner::Runner,
     scope::{Scope, ScopeKey, ScopeLife},
@@ -26,7 +32,7 @@ pub(crate) struct EventLoopContext<'elwt> {
 #[derive(Resource)]
 #[snowberry_path = "internal"]
 pub(crate) struct Windows {
-    pub(crate) event_handler: HashMap<WindowId, EventStation<WindowEvent>>,
+    pub(crate) event_handler: HashMap<WindowId, *const RefCell<EventStation<WindowEvent>>>,
 }
 
 pub struct WinitEventDispatcher(EventLoopProxy<ErasedEventStation>);
@@ -113,8 +119,8 @@ impl<'root, R: Element<'root>> ApplicationHandler<ErasedEventStation>
     ) {
         let windows = self.resources.get::<Windows>().unwrap();
         if let Some(station) = windows.event_handler.get(&window_id) {
-            let station = station.clone(); // we need to clone in order to pass &mut resources :< is there a better way? resource locking maybe? or RefCells?
-            for (scope, listener) in &station.listeners {
+            let station = (*(unsafe { station.as_ref() }.unwrap()).borrow()).clone(); // we need to clone in order to pass &mut resources :< is there a better way? resource locking maybe? or RefCells?
+            for SubscriptionEntry { scope, listener } in station.listeners.values() {
                 // TODO: is that needed here?
                 if !self.scopes.contains_key(*scope) {
                     continue;

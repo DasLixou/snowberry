@@ -6,17 +6,17 @@ use crate::{
     scope::ScopeKey,
 };
 
-pub struct EventListener<'scope, E: Clone + 'static, L: Listener<E> + Clone> {
+pub struct EventListener<'scope, E: Clone + 'static, L: Listener<E>> {
     scope: ScopeKey,
     listener: L,
     subscriptions: Vec<(&'scope RefCell<EventStation<E>>, Subscription)>,
 }
 
-impl<'scope, E: Clone + 'static, L: Listener<E> + Clone> EventListener<'scope, E, L> {
+impl<'scope, E: Clone + 'static, L: Listener<E>> EventListener<'scope, E, L> {
     pub fn new(
         cx: &mut Context<'scope, '_>,
         listener: L,
-        stations: &'scope [RefCell<EventStation<E>>],
+        stations: &[&'scope RefCell<EventStation<E>>],
     ) -> &'scope Self {
         let subscriptions = stations
             .into_iter()
@@ -25,16 +25,23 @@ impl<'scope, E: Clone + 'static, L: Listener<E> + Clone> EventListener<'scope, E
                 let sub = station
                     .borrow_mut()
                     .subscribe(cx.scope, listener.cloned_box());
-                (station, sub)
+                (*station, sub)
             })
             .collect::<Vec<(&'scope RefCell<EventStation<E>>, Subscription)>>();
-        let me = EventListener {
+
+        cx.store(EventListener {
             scope: cx.scope,
             listener,
             subscriptions,
-        };
-        let whoops = cx.store(me);
-        todo!()
+        })
+    }
+}
+
+impl<'scope, E: Clone + 'static, L: Listener<E>> Drop for EventListener<'scope, E, L> {
+    fn drop(&mut self) {
+        for (station, subscription) in &self.subscriptions {
+            station.borrow_mut().unsubscribe(*subscription);
+        }
     }
 }
 

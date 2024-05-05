@@ -10,8 +10,9 @@ new_key_type! {
     pub struct Subscription;
 }
 
+#[derive(Clone)]
 pub struct EventStation<E: Clone + 'static> {
-    pub listeners: SlotMap<Subscription, (ScopeKey, Box<dyn Listener<E>>)>,
+    pub listeners: SlotMap<Subscription, SubscriptionEntry<E>>,
 }
 
 impl<E: Clone + 'static> EventStation<E> {
@@ -22,7 +23,8 @@ impl<E: Clone + 'static> EventStation<E> {
     }
 
     pub(crate) fn subscribe(&mut self, scope: ScopeKey, l: Box<dyn Listener<E>>) -> Subscription {
-        self.listeners.insert((scope, l))
+        self.listeners
+            .insert(SubscriptionEntry { scope, listener: l })
     }
 
     pub(crate) fn unsubscribe(&mut self, subscription: Subscription) {
@@ -38,8 +40,8 @@ impl<E: Clone + 'static> EventStation<E> {
             listener_calls: self
                 .listeners
                 .values()
-                .map(|(scope, l)| {
-                    let b = l.cloned_box();
+                .map(|SubscriptionEntry { scope, listener }| {
+                    let b = listener.cloned_box();
                     let e = event.clone();
                     let erased = ErasedListenerCall {
                         call: Box::new(move |cx| {
@@ -49,6 +51,20 @@ impl<E: Clone + 'static> EventStation<E> {
                     (*scope, erased)
                 })
                 .collect(),
+        }
+    }
+}
+
+pub struct SubscriptionEntry<E: Clone + 'static> {
+    pub scope: ScopeKey,
+    pub listener: Box<dyn Listener<E>>,
+}
+
+impl<E: Clone + 'static> Clone for SubscriptionEntry<E> {
+    fn clone(&self) -> Self {
+        Self {
+            scope: self.scope,
+            listener: self.listener.cloned_box(),
         }
     }
 }

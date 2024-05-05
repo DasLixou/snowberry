@@ -4,7 +4,6 @@ use std::error::Error;
 use snowberry::core::{app::App, context::Context};
 use snowberry::vello::{self, Scene};
 use snowberry::winit::{window, WinitRunner};
-use snowberry_core::event_station::EventStation;
 use snowberry_core::loader::loader;
 use vello::kurbo::{Affine, Rect};
 use vello::peniko::Color;
@@ -42,14 +41,6 @@ fn content(cx: &mut Context<'_, '_>) {
         let _toggle = loader(cx, |_cx| {
             println!("later, I want to be toggled :3");
         });
-
-        let mut thing = EventStation::new();
-        thing.listen(cx.scope, |e: i32, _cx: &mut Context<'_, '_>| {
-            println!("Hehey {e}!");
-        });
-        thing.dispatch(cx, 1);
-        thing.dispatch(cx, 2);
-        thing.dispatch(cx, 3);
     });
     window(cx, "Another Window", |cx, _window| {
         println!("this is another window");
