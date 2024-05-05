@@ -45,6 +45,14 @@ impl ScopeStore {
     }
 }
 
+impl Drop for ScopeStore {
+    fn drop(&mut self) {
+        for d in self.drops.get_mut().into_iter().rev() {
+            d.run_drop();
+        }
+    }
+}
+
 struct StoreDropper {
     pointer: *mut (),
     drop_fn: fn(*mut ()),
@@ -57,10 +65,8 @@ impl StoreDropper {
             drop_fn: erased_drop::<T>,
         }
     }
-}
 
-impl Drop for StoreDropper {
-    fn drop(&mut self) {
+    pub fn run_drop(&mut self) {
         (self.drop_fn)(self.pointer)
     }
 }

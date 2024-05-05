@@ -1,10 +1,4 @@
-use std::{
-    cell::{Ref, RefCell},
-    collections::HashMap,
-    error::Error,
-    marker::PhantomData,
-    mem::transmute,
-};
+use std::{cell::RefCell, collections::HashMap, error::Error, marker::PhantomData, mem::transmute};
 
 use slotmap::SlotMap;
 use snowberry_core::{
