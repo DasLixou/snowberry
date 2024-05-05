@@ -11,15 +11,16 @@ use snowberry_core::{
     scope::{Scope, ScopeKey, ScopeLife},
 };
 use winit::{
-    event::{Event, StartCause, WindowEvent},
-    event_loop::{EventLoopBuilder, EventLoopProxy, EventLoopWindowTarget},
+    application::ApplicationHandler,
+    event::{StartCause, WindowEvent},
+    event_loop::{ActiveEventLoop, EventLoop, EventLoopProxy},
     window::WindowId,
 };
 
 #[derive(Resource)]
 #[snowberry_path = "internal"]
 pub(crate) struct EventLoopContext<'elwt> {
-    pub(crate) window_target: &'elwt EventLoopWindowTarget<ErasedEventStation>,
+    pub(crate) active: &'elwt ActiveEventLoop,
 }
 
 #[derive(Resource)]
@@ -41,7 +42,7 @@ pub struct WinitRunner;
 
 impl Runner for WinitRunner {
     fn run<'root>(&mut self, _app: App, root: impl Element<'root>) -> Result<(), Box<dyn Error>> {
-        let event_loop = EventLoopBuilder::<ErasedEventStation>::with_user_event().build()?;
+        let event_loop = EventLoop::<ErasedEventStation>::with_user_event().build()?;
         let proxy = event_loop.create_proxy();
 
         let mut resources = Resources::new();
@@ -52,73 +53,101 @@ impl Runner for WinitRunner {
             event_handler: HashMap::new(),
         });
 
-        let mut event_dispatcher = WinitEventDispatcher(proxy);
+        let event_dispatcher = WinitEventDispatcher(proxy);
 
-        event_loop.run(move |event, elwt| {
-            //println!("{event:?}");
-            match event {
-                Event::NewEvents(StartCause::Init) => {
-                    let elc = EventLoopContext {
-                        window_target: elwt,
-                    };
-                    // TODO: this should be safe but moved into with_temp and proper lifetime stuff
-                    // - it is safe as long as it can't be removed or otherwise owned with a longer lifetime.
-                    // - just getting is fine because the borrow can't live longer than the return value of with_temp
-                    let elc: EventLoopContext<'static> = unsafe { transmute(elc) };
-                    resources.with_temp(elc, |resources| {
-                        root.build(&mut Context {
-                            resources,
-                            scopes: &mut scopes,
-                            scope: root_scope,
-                            life: ScopeLife(PhantomData),
-                            event_dispatcher: &mut event_dispatcher,
-                        });
-                    });
+        let mut state = WinitRunnerState {
+            resources,
+            scopes,
+            root_scope,
+            root,
+            event_dispatcher,
+            phantom: PhantomData,
+        };
 
-                    println!("Root was built!");
+        event_loop.run_app(&mut state).map_err(Into::into)
+    }
+}
+
+pub struct WinitRunnerState<'root, R: Element<'root>> {
+    resources: Resources,
+    scopes: SlotMap<ScopeKey, Scope>,
+    root_scope: ScopeKey,
+    root: R,
+    event_dispatcher: WinitEventDispatcher,
+    phantom: PhantomData<&'root ()>,
+}
+
+impl<'root, R: Element<'root>> ApplicationHandler<ErasedEventStation>
+    for WinitRunnerState<'root, R>
+{
+    fn new_events(&mut self, event_loop: &ActiveEventLoop, cause: StartCause) {
+        if StartCause::Init != cause {
+            return;
+        };
+
+        let elc = EventLoopContext { active: event_loop };
+        // TODO: this should be safe but moved into with_temp and proper lifetime stuff
+        // - it is safe as long as it can't be removed or otherwise owned with a longer lifetime.
+        // - just getting is fine because the borrow can't live longer than the return value of with_temp
+        let elc: EventLoopContext<'static> = unsafe { transmute(elc) };
+        self.resources.with_temp(elc, |resources| {
+            self.root.build(&mut Context {
+                resources,
+                scopes: &mut self.scopes,
+                scope: self.root_scope,
+                life: ScopeLife(PhantomData),
+                event_dispatcher: &mut self.event_dispatcher,
+            });
+        });
+
+        println!("Root was built!");
+    }
+
+    fn resumed(&mut self, _event_loop: &ActiveEventLoop) {}
+
+    fn window_event(
+        &mut self,
+        _event_loop: &ActiveEventLoop,
+        window_id: WindowId,
+        event: WindowEvent,
+    ) {
+        let windows = self.resources.get::<Windows>().unwrap();
+        if let Some(station) = windows.event_handler.get(&window_id) {
+            let station = station.clone(); // we need to clone in order to pass &mut resources :< is there a better way? resource locking maybe? or RefCells?
+            for (scope, listener) in &station.listeners {
+                // TODO: is that needed here?
+                if !self.scopes.contains_key(*scope) {
+                    continue;
                 }
-                Event::WindowEvent { window_id, event } => {
-                    let windows = resources.get::<Windows>().unwrap();
-                    if let Some(station) = windows.event_handler.get(&window_id) {
-                        let station = station.clone(); // we need to clone in order to pass &mut resources :< is there a better way? resource locking maybe? or RefCells?
-                        for (scope, listener) in &station.listeners {
-                            // TODO: is that needed here?
-                            if !scopes.contains_key(*scope) {
-                                continue;
-                            }
-                            listener.run(
-                                event.clone(),
-                                &mut Context {
-                                    resources: &mut resources, // TODO: we should also move elc in here when it has a better "safer" api
-                                    scopes: &mut scopes,
-                                    scope: *scope,
-                                    life: ScopeLife(PhantomData),
-                                    event_dispatcher: &mut event_dispatcher,
-                                },
-                            );
-                        }
-                    } else {
-                        eprintln!("Handler for Window {window_id:?} not defined!");
-                    }
-                }
-                Event::UserEvent(station) => {
-                    for (scope, listener) in station.listener_calls {
-                        if !scopes.contains_key(scope) {
-                            continue;
-                        }
-                        listener.run(&mut Context {
-                            resources: &mut resources, // TODO: we should also move elc in here when it has a better "safer" api
-                            scopes: &mut scopes,
-                            scope,
-                            life: ScopeLife(PhantomData),
-                            event_dispatcher: &mut event_dispatcher,
-                        });
-                    }
-                }
-                _ => {}
+                listener.run(
+                    event.clone(),
+                    &mut Context {
+                        resources: &mut self.resources, // TODO: we should also move elc in here when it has a better "safer" api
+                        scopes: &mut self.scopes,
+                        scope: *scope,
+                        life: ScopeLife(PhantomData),
+                        event_dispatcher: &mut self.event_dispatcher,
+                    },
+                );
             }
-        })?;
+        } else {
+            eprintln!("Handler for Window {window_id:?} not defined!");
+        }
+    }
 
-        Ok(())
+    fn user_event(&mut self, _event_loop: &ActiveEventLoop, event: ErasedEventStation) {
+        let station = event;
+        for (scope, listener) in station.listener_calls {
+            if !self.scopes.contains_key(scope) {
+                continue;
+            }
+            listener.run(&mut Context {
+                resources: &mut self.resources, // TODO: we should also move elc in here when it has a better "safer" api
+                scopes: &mut self.scopes,
+                scope,
+                life: ScopeLife(PhantomData),
+                event_dispatcher: &mut self.event_dispatcher,
+            });
+        }
     }
 }

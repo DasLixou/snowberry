@@ -1,11 +1,9 @@
 use snowberry_core::{context::Context, event_station::EventStation};
-use winit::{
-    event::WindowEvent,
-    window::{Window, WindowBuilder},
-};
+use winit::{event::WindowEvent, window::Window};
 
 use crate::{EventLoopContext, Windows};
 
+// TODO: let the inner stuff run before the window so title can be set from inside, then add an oneshot builder after window creation
 pub fn window<'scope: 'sub, 'sub>(
     cx: &'sub mut Context<'scope, '_>,
     title: &'static str,
@@ -17,9 +15,9 @@ pub fn window<'scope: 'sub, 'sub>(
             return;
         };
 
-        let window = WindowBuilder::new()
-            .with_title(title)
-            .build(elc.window_target)
+        let window = elc
+            .active
+            .create_window(Window::default_attributes().with_title(title))
             .unwrap();
         let id = window.id();
         let window = cx.store(window);

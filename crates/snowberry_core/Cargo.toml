@@ -6,5 +6,6 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+bumpalo = "3.16.0"
 slotmap = "1.0.7"
 snowberry_core_macros = { path = "macros" }
