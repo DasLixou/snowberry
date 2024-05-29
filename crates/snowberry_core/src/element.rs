@@ -1,14 +1,16 @@
-use crate::context::Context;
+use crate::{context::Context, ConstructId};
 
-pub trait Element<'scope> {
-    fn build(&self, cx: &mut Context<'scope, '_>);
+pub trait InitElement {
+    fn exec(&self, cx: &mut Context) -> ConstructId;
 }
 
-impl<'scope, F> Element<'scope> for F
+impl<F, T: 'static> InitElement for F
 where
-    F: Fn(&mut Context<'scope, '_>),
+    F: Fn(&mut Context) -> T,
 {
-    fn build(&self, cx: &mut Context<'scope, '_>) {
-        self(cx)
+    fn exec(&self, cx: &mut Context) -> ConstructId {
+        let construct = self(cx);
+        let construct = Box::new(construct);
+        cx.constructs.insert(construct)
     }
 }

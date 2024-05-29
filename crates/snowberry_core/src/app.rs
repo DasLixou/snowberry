@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use crate::{element::Element, runner::Runner};
+use crate::{element::InitElement, runner::Runner};
 
 pub struct App {}
 
@@ -9,10 +9,10 @@ impl App {
         App {}
     }
 
-    pub fn run<'root>(
+    pub fn run(
         self,
         mut runner: impl Runner,
-        root: impl Element<'root> + 'static,
+        root: impl InitElement + 'static,
     ) -> Result<(), Box<dyn Error>> {
         runner.run(self, root)
     }
