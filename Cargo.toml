@@ -1,12 +1,6 @@
-[workspace]
-members = ["crates/*"]
-
 [package]
 name = "snowberry"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-snowberry_core = { path = "crates/snowberry_core" }
-snowberry_vello = { path = "crates/snowberry_vello" }
-snowberry_winit = { path = "crates/snowberry_winit" }
