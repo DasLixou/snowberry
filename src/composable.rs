@@ -15,9 +15,9 @@ where
 
 // store utils
 
-pub fn split_off<T, Rest>(
-    tuple: &mut MaybeUninit<(T, Rest)>,
-) -> (&mut MaybeUninit<T>, &mut MaybeUninit<Rest>) {
+pub fn split_off<Rest, T>(
+    tuple: &mut MaybeUninit<(Rest, T)>,
+) -> (&mut MaybeUninit<Rest>, &mut MaybeUninit<T>) {
     unsafe {
         (
             &mut *(&raw mut (*tuple.as_mut_ptr()).0).cast(),
@@ -26,12 +26,12 @@ pub fn split_off<T, Rest>(
     }
 }
 
-pub fn store_val<T, Rest>(
+pub fn store_val<Rest, T>(
+    store: &mut MaybeUninit<(Rest, T)>,
     val: T,
-    store: &mut MaybeUninit<(T, Rest)>,
-) -> (&mut T, &mut MaybeUninit<Rest>) {
-    let (slot, store) = split_off::<T, Rest>(store);
-    (slot.write(val), store)
+) -> (&mut MaybeUninit<Rest>, &mut T) {
+    let (store, slot) = split_off::<Rest, T>(store);
+    (store, slot.write(val))
 }
 
 pub fn end(tuple: &mut MaybeUninit<()>) {
