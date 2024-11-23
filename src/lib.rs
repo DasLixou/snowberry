@@ -3,8 +3,8 @@
 
 pub mod composable;
 pub mod composition;
-pub mod reactive;
 pub mod scope;
+pub mod store;
 
 pub mod prelude {
     pub use crate::scope::Scope;

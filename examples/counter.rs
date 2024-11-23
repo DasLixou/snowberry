@@ -1,9 +1,6 @@
 use std::mem::MaybeUninit;
 
-use snowberry::{
-    composable::{end, store_val, Composable},
-    scope::Scope,
-};
+use snowberry::{scope::Scope, store::Stored};
 
 struct Bomb<'s>(&'s str);
 impl Drop for Bomb<'_> {
@@ -13,22 +10,15 @@ impl Drop for Bomb<'_> {
 }
 
 fn main() {
-    let mut store = MaybeUninit::uninit();
-
-    let _a = Bomb("OUTER a - First Bomb");
-    let _b = Bomb("OUTER b - Second Bomb");
+    let stored = MaybeUninit::uninit();
 
     Scope::open(|_scope| {
-        (|store| {
-            let (store, counter) = store_val(store, 0);
+        Stored::store(stored, |store| {
+            let (store, counter) = store.store_val(0);
             *counter += 1;
-            let (store, _a) = store_val(store, Bomb("INNER a - First Bomb"));
-            let (store, _b) = store_val(store, Bomb("INNER b - Second Bomb"));
-            end(store);
-        })
-        .compose(&mut store);
+            let (store, _a) = store.store_val(Bomb("INNER a - First Bomb"));
+            let (store, _b) = store.store_val(Bomb("INNER b - Second Bomb"));
+            store.end();
+        });
     });
-    unsafe {
-        store.assume_init();
-    }
 }
