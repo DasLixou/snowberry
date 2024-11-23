@@ -21,6 +21,7 @@ pub struct Store<'scope, T> {
 }
 
 impl<'scope, Rest: 'scope, T: 'scope> Store<'scope, (Rest, T)> {
+    #[must_use]
     pub fn split_off(self) -> (Store<'scope, Rest>, &'scope mut MaybeUninit<T>) {
         unsafe {
             (
@@ -32,6 +33,7 @@ impl<'scope, Rest: 'scope, T: 'scope> Store<'scope, (Rest, T)> {
         }
     }
 
+    #[must_use]
     pub fn store_val(self, val: T) -> (Store<'scope, Rest>, &'scope mut T) {
         let (store, slot) = self.split_off();
         (store, slot.write(val))

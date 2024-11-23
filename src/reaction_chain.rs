@@ -5,6 +5,7 @@ pub struct ReactionChain<'scope, C: Reaction> {
 }
 
 impl<'scope, Rest: Reaction + 'scope, R: Reaction + 'scope> ReactionChain<'scope, (Rest, R)> {
+    #[must_use]
     fn split_off(self) -> (ReactionChain<'scope, Rest>, &'scope mut MaybeUninit<R>) {
         unsafe {
             (
@@ -16,6 +17,7 @@ impl<'scope, Rest: Reaction + 'scope, R: Reaction + 'scope> ReactionChain<'scope
         }
     }
 
+    #[must_use]
     pub fn react(self, reaction: R) -> ReactionChain<'scope, Rest> {
         let (chain, slot) = self.split_off();
         slot.write(reaction);
