@@ -12,8 +12,13 @@ fn main() {
             let counter_chain = counter_chain.react(|| {
                 println!("Counter changed!");
             });
-            counter_chain.end();
 
+            /* This somehow goes infinite size ...
+
+            let counter_chain =
+                counter_chain.react(|| println!("Counter is now {}", counter.get()));*/
+
+            counter_chain.end();
             counter.update(|c| *c += 1);
 
             store.end();

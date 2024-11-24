@@ -9,6 +9,10 @@ pub struct Reactive<'scope, T, Chain: Reaction> {
 }
 
 impl<'scope, T, Chain: Reaction> Reactive<'scope, T, Chain> {
+    pub fn get(&self) -> &T {
+        &self.val
+    }
+
     pub fn update<F>(&mut self, f: F)
     where
         F: FnOnce(&mut T),
