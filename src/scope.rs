@@ -13,13 +13,13 @@ impl<'scope> Scope<'scope> {
         }
     }
 
-    pub fn open<F>(sub: F) -> Self
+    pub fn open<F, T>(sub: F) -> (Self, T)
     where
-        F: FnOnce(&'_ mut Self) + 'scope,
+        F: FnOnce(&'_ mut Self) -> T + 'scope,
     {
         let mut scope = Scope::new();
-        sub(&mut scope);
-        scope
+        let t = sub(&mut scope);
+        (scope, t)
     }
 
     pub fn sub<'sub, F>(&self, sub: F) -> Scope<'sub>
