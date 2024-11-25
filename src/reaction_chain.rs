@@ -1,7 +1,17 @@
 use std::mem::MaybeUninit;
 
+use crate::store::Store;
+
 pub struct ReactionChain<'scope, C: Reaction> {
-    pub(crate) inner: &'scope mut MaybeUninit<C>,
+    inner: &'scope mut MaybeUninit<C>,
+}
+
+impl<'scope, C: Reaction> ReactionChain<'scope, C> {
+    pub fn on<Rest>(store: Store<'scope, (Rest, C)>) -> (Store<'scope, Rest>, Self, &C) {
+        let (store, me) = store.split_off();
+        let x = unsafe { &*me.as_ptr() }; // TODO: still unsafe and multiple borrows >:C
+        (store, ReactionChain { inner: me }, x)
+    }
 }
 
 impl<'scope, Rest: Reaction + 'scope, R: Reaction + 'scope> ReactionChain<'scope, (Rest, R)> {
