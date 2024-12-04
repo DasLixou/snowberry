@@ -2,16 +2,13 @@ use std::mem::MaybeUninit;
 
 use crate::{composable::Composable, scope::Scope, store::Stored};
 
-pub struct Composition<'scope, S> {
+pub struct Composition<'scope, C: Composable<'scope>> {
     scope: Scope<'scope>,
-    stored: Stored<'scope, S>,
+    stored: Stored<'scope, C::Store>,
 }
 
-impl<'scope, S> Composition<'scope, S> {
-    pub fn open<C>(c: C) -> Self
-    where
-        C: Composable<'scope, S>,
-    {
+impl<'scope, C: Composable<'scope>> Composition<'scope, C> {
+    pub fn open(c: C) -> Self {
         let stored = MaybeUninit::uninit();
         let (scope, stored) = Scope::open(|_scope| Stored::store(stored, c));
         Composition { scope, stored }
