@@ -1,16 +1,36 @@
-use std::cell::Cell;
+use std::{cell::Cell, mem::MaybeUninit};
 
 use snowberry::{composable::Composable, composition::Composition};
 
-fn main() {
-    Composition::open({
-        struct Counter;
-        impl Composable<'_> for Counter {
-            type Store = ((), Cell<i32>);
-            fn compose(self, store: snowberry::store::Store<'_, Self::Store>) {
-                let (store, count) = store.store_val(Cell::new(0));
+macro_rules! composable {
+    ($($($store_name:ident: $store_ty:ty),+ =>)? { $($tokens:tt)* }) => {{
+        use std::mem::MaybeUninit;
+        struct Magic;
+        struct MagicStore {
+            $($($store_name: MaybeUninit<$store_ty>,)+)?
+        }
+        impl Composable<'_> for Magic {
+            type Store = MagicStore;
+            fn compose(self, store: &'_ mut Self::Store) {
+                let MagicStore { $($($store_name)+)? } = store;
+                $($tokens)*
             }
         }
-        Counter
-    });
+        Magic
+    }};
+}
+
+fn main() {
+    let composition = MaybeUninit::uninit();
+    Composition::open(composition, counter());
+}
+
+fn counter<'l>() -> impl Composable<'l> {
+    composable! {
+        count: Cell<i32>
+        => {
+            let count = count.write(Cell::new(0));
+            println!("Currently {}", count.get());
+        }
+    }
 }

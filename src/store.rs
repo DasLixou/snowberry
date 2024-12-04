@@ -7,17 +7,6 @@ pub struct Stored<'scope, T: 'scope> {
     _phantom: PhantomData<&'scope ()>,
 }
 
-impl<'scope, T: 'scope> Stored<'scope, T> {
-    pub fn store<C>(mut me: MaybeUninit<Self>, c: C) -> Self
-    where
-        C: Composable<'scope, Store = T>,
-    {
-        let inner = unsafe { &mut *me.as_mut_ptr().cast() };
-        c.compose(Store { inner });
-        unsafe { me.assume_init() }
-    }
-}
-
 pub struct Store<'scope, T> {
     inner: &'scope mut MaybeUninit<T>,
 }
