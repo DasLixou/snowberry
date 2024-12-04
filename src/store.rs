@@ -1,17 +1,19 @@
 use std::{marker::PhantomData, mem::MaybeUninit};
 
+use crate::composable::Composable;
+
 pub struct Stored<'scope, T: 'scope> {
     inner: T,
     _phantom: PhantomData<&'scope ()>,
 }
 
 impl<'scope, T: 'scope> Stored<'scope, T> {
-    pub fn store<F>(mut me: MaybeUninit<Self>, f: F) -> Self
+    pub fn store<C>(mut me: MaybeUninit<Self>, c: C) -> Self
     where
-        F: FnOnce(Store<'scope, T>) + 'scope,
+        C: Composable<'scope, T>,
     {
         let inner = unsafe { &mut *me.as_mut_ptr().cast() };
-        f(Store { inner });
+        c.compose(Store { inner });
         unsafe { me.assume_init() }
     }
 }

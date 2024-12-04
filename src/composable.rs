@@ -1,14 +1,14 @@
 use crate::store::Store;
 
-pub trait Composable<'s, S: 's> {
-    fn compose(self, store: Store<'s, S>);
+pub trait Composable<'scope, S: 'scope>: 'scope {
+    fn compose(self, store: Store<'scope, S>);
 }
 
-impl<'s, F, S: 's> Composable<'s, S> for F
+impl<'scope, S: 'scope, F> Composable<'scope, S> for F
 where
-    F: FnOnce(Store<'s, S>),
+    F: FnOnce(Store<'scope, S>) + 'scope,
 {
-    fn compose(self, store: Store<'s, S>) {
+    fn compose(self, store: Store<'scope, S>) {
         (self)(store);
     }
 }
