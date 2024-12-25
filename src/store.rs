@@ -10,7 +10,7 @@ pub struct Stored<'scope, T: 'scope> {
 impl<'scope, T: 'scope> Stored<'scope, T> {
     pub fn store<C>(me: Pin<&'scope mut MaybeUninit<Self>>, c: C)
     where
-        C: Composable<'scope, Store = T>,
+        C: Composable<Store<'scope> = T>,
     {
         let inner = unsafe {
             me.map_unchecked_mut(|unpin_me| &mut *unpin_me.as_mut_ptr().cast::<MaybeUninit<_>>())

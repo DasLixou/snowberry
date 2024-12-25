@@ -1,12 +1,12 @@
-use std::{cell::Cell, pin::pin};
+use std::cell::Cell;
 
-use snowberry::{composable, composable::Composable, snowberry};
+use snowberry::{composable, composable::Composable, simple::run_simple};
 
 fn main() {
-    snowberry!(counter());
+    run_simple(counter());
 }
 
-fn counter<'l>() -> impl Composable<'l> {
+fn counter() -> impl Composable {
     composable!(|store| {
         let (store, count) = store.store_val(Cell::new(0));
         println!("Currently {}", count.get());
