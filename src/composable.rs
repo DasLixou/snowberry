@@ -1,10 +1,12 @@
 use std::marker::PhantomData;
 
+use crate::store::Store;
+
 /// Typically implemented on ZST type or a FnOnce wrapper when creation holds variables
 pub trait Composable<'life>: 'life {
     type Store: Sized + 'life;
 
-    fn compose(self, store: &'life mut Self::Store);
+    fn compose(self, store: Store<'life, Self::Store>);
 }
 
 /*
@@ -39,7 +41,7 @@ impl<S, F> reify::IntoReified<S> for F where F: FnOnce(&mut S) {}*/
 
 pub fn make_composable<'life, F, S>(closure: F) -> impl Composable<'life>
 where
-    F: FnOnce(&'life mut S) + 'life,
+    F: FnOnce(Store<'life, S>) + 'life,
     S: 'life,
 {
     struct MyComposable<'life, F, S> {
@@ -48,12 +50,12 @@ where
     }
     impl<'life, F, S> Composable<'life> for MyComposable<'life, F, S>
     where
-        F: FnOnce(&'life mut S) + 'life,
+        F: FnOnce(Store<'life, S>) + 'life,
         S: 'life,
     {
         type Store = S;
 
-        fn compose(self, store: &'life mut Self::Store) {
+        fn compose(self, store: Store<'life, Self::Store>) {
             (self.closure)(store);
         }
     }

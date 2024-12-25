@@ -6,14 +6,14 @@ use snowberry::{
 };
 
 fn main() {
-    let composition = MaybeUninit::uninit();
-    Composition::open(composition, counter());
+    let mut composition = MaybeUninit::uninit();
+    Composition::open(&mut composition, counter());
 }
 
 fn counter<'l>() -> impl Composable<'l> {
     make_composable(|store| {
-        let count = store.write(Cell::new(0));
+        let (store, count) = store.store_val(Cell::new(0));
         println!("Currently {}", count.get());
-        store.close();
+        store.end();
     })
 }
