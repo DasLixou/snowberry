@@ -9,36 +9,6 @@ pub trait Composable<'life>: 'life {
     fn compose(self, store: Store<'life, Self::Store>);
 }
 
-/*
-/// Reify util to convert generics of a trait into assoicated types of a simple trait.
-pub mod reify {
-    use std::marker::PhantomData;
-
-    pub trait IntoReified<S>: Sized {
-        fn reify(self) -> Described<S, Self> {
-            Described {
-                inner: self,
-                phantom: PhantomData,
-            }
-        }
-    }
-
-    pub struct Described<S, R: IntoReified<S>> {
-        inner: R,
-        phantom: PhantomData<S>,
-    }
-
-    pub trait Reified {
-        type S;
-    }
-
-    impl<S, R: IntoReified<S>> Reified for Described<S, R> {
-        type S = S;
-    }
-}
-
-impl<S, F> reify::IntoReified<S> for F where F: FnOnce(&mut S) {}*/
-
 pub fn make_composable<'life, F, S>(closure: F) -> impl Composable<'life>
 where
     F: FnOnce(Store<'life, S>) + 'life,
