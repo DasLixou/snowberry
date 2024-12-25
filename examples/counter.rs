@@ -1,10 +1,9 @@
-use std::{cell::Cell, mem::MaybeUninit, pin::pin};
+use std::{cell::Cell, pin::pin};
 
-use snowberry::{composable, composable::Composable, composition::Composition};
+use snowberry::{composable, composable::Composable, snowberry};
 
 fn main() {
-    let composition = pin!(MaybeUninit::uninit());
-    Composition::open(composition, counter());
+    snowberry!(counter());
 }
 
 fn counter<'l>() -> impl Composable<'l> {

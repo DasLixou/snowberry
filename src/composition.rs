@@ -8,12 +8,19 @@ pub struct Composition<'scope, C: Composable<'scope>> {
 }
 
 impl<'scope, C: Composable<'scope>> Composition<'scope, C> {
-    pub fn open(me: Pin<&'scope mut MaybeUninit<Self>>, c: C) {
+    /// ## Safety
+    /// * Caller has to ensure that `me` gets dropped as an initialized composition.
+    pub unsafe fn open(me: Pin<&'scope mut MaybeUninit<Self>>, c: C) -> Pin<&'scope mut Self> {
+        let unpin_me = unsafe { me.get_unchecked_mut() };
         let stored = unsafe {
-            me.map_unchecked_mut(|unpin_me| {
-                &mut *(&raw mut (*unpin_me.as_mut_ptr()).stored).cast::<MaybeUninit<_>>()
-            })
+            Pin::new_unchecked(
+                &mut *(&raw mut (*unpin_me.as_mut_ptr()).stored).cast::<MaybeUninit<_>>(),
+            )
         };
-        let (_scope, _) = Scope::open(|_scope| Stored::store(stored, c));
+        let (scope, _) = Scope::open(|_scope| Stored::store(stored, c));
+        unsafe {
+            (&raw mut (*unpin_me.as_mut_ptr()).scope).write(scope);
+            Pin::new_unchecked(unpin_me.assume_init_mut())
+        }
     }
 }

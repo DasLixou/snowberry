@@ -5,6 +5,7 @@ pub mod composable;
 pub mod composition;
 pub mod reaction_chain;
 pub mod scope;
+pub mod simple;
 pub mod store;
 
 pub mod prelude {
