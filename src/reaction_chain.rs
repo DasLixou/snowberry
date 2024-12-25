@@ -9,6 +9,8 @@ pub struct ReactionChain<'scope, C: Reaction> {
 impl<'scope, C: Reaction> ReactionChain<'scope, C> {
     pub fn on<Rest>(store: Store<'scope, (Rest, C)>) -> (Store<'scope, Rest>, Self, &C) {
         let (store, me) = store.split_off();
+        // TODO: make this pin
+        let me = unsafe { me.get_unchecked_mut() };
         let x = unsafe { &*me.as_ptr() }; // TODO: still unsafe and multiple borrows >:C
         (store, ReactionChain { inner: me }, x)
     }

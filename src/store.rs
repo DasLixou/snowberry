@@ -1,4 +1,4 @@
-use std::{marker::PhantomData, mem::MaybeUninit};
+use std::{marker::PhantomData, mem::MaybeUninit, pin::Pin};
 
 use crate::composable::Composable;
 
@@ -8,36 +8,37 @@ pub struct Stored<'scope, T: 'scope> {
 }
 
 impl<'scope, T: 'scope> Stored<'scope, T> {
-    pub fn store<C>(me: &mut MaybeUninit<Self>, c: C)
+    pub fn store<C>(me: Pin<&'scope mut MaybeUninit<Self>>, c: C)
     where
         C: Composable<'scope, Store = T>,
     {
-        let inner = unsafe { &mut *me.as_mut_ptr().cast() };
+        let inner = unsafe {
+            me.map_unchecked_mut(|unpin_me| &mut *unpin_me.as_mut_ptr().cast::<MaybeUninit<_>>())
+        };
         c.compose(Store { inner });
     }
 }
 
 pub struct Store<'scope, T> {
-    inner: &'scope mut MaybeUninit<T>,
+    inner: Pin<&'scope mut MaybeUninit<T>>,
 }
 
 impl<'scope, Rest: 'scope, T: 'scope> Store<'scope, (Rest, T)> {
     #[must_use]
-    pub fn split_off(self) -> (Store<'scope, Rest>, &'scope mut MaybeUninit<T>) {
+    pub fn split_off(self) -> (Store<'scope, Rest>, Pin<&'scope mut MaybeUninit<T>>) {
         unsafe {
-            (
-                Store {
-                    inner: &mut *(&raw mut (*self.inner.as_mut_ptr()).0).cast(),
-                },
-                &mut *(&raw mut (*self.inner.as_mut_ptr()).1).cast(),
-            )
+            let unpin = self.inner.get_unchecked_mut();
+            let inner = Pin::new_unchecked(&mut *(&raw mut (*unpin.as_mut_ptr()).0).cast());
+            let slot = Pin::new_unchecked(&mut *(&raw mut (*unpin.as_mut_ptr()).1).cast());
+            (Store { inner }, slot)
         }
     }
 
     #[must_use]
-    pub fn store_val(self, val: T) -> (Store<'scope, Rest>, &'scope mut T) {
+    pub fn store_val(self, val: T) -> (Store<'scope, Rest>, Pin<&'scope mut T>) {
         let (store, slot) = self.split_off();
-        (store, slot.write(val))
+        let slot = unsafe { slot.map_unchecked_mut(|unpin| unpin.write(val)) };
+        (store, slot)
     }
 }
 
