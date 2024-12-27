@@ -3,29 +3,29 @@ use std::marker::PhantomData;
 use crate::store::Store;
 
 /// Typically implemented on ZST type or a FnOnce wrapper when creation holds variables
-pub trait Composable {
-    type Store<'life>: Sized + 'life;
+pub trait Composable<'life> {
+    type Store: Sized + 'life;
 
-    fn compose<'life>(self, store: Store<'life, Self::Store<'life>>);
+    fn compose(self, store: Store<'life, Self::Store>);
 }
 
-pub fn make_composable<F, S>(closure: F) -> impl Composable
+pub fn make_composable<'life, F, S>(closure: F) -> impl Composable<'life>
 where
-    for<'life> F: FnOnce(Store<'life, S>) + 'life,
-    for<'life> S: 'life,
+    F: FnOnce(Store<'life, S>) + 'life,
+    S: 'life,
 {
-    struct MyComposable<F, S> {
+    struct MyComposable<'life, F, S> {
         closure: F,
-        phantom: PhantomData<S>,
+        phantom: PhantomData<&'life S>,
     }
-    impl<F, S> Composable for MyComposable<F, S>
+    impl<'life, F, S> Composable<'life> for MyComposable<'life, F, S>
     where
-        for<'life> F: FnOnce(Store<'life, S>) + 'life,
-        for<'life> S: 'life,
+        F: FnOnce(Store<'life, S>) + 'life,
+        S: 'life,
     {
-        type Store<'life> = S;
+        type Store = S;
 
-        fn compose<'life>(self, store: Store<'life, Self::Store<'life>>) {
+        fn compose(self, store: Store<'life, Self::Store>) {
             (self.closure)(store);
         }
     }
