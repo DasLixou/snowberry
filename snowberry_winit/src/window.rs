@@ -5,10 +5,7 @@ use winit::window::Window;
 
 use crate::runner::LOOP;
 
-pub fn window<'life, C: Composable<'life> + 'life>(
-    title: String,
-    child: C,
-) -> impl Composable<'life> {
+pub fn window<'life, C: Composable<'life>>(title: String, child: C) -> impl Composable<'life> {
     composable! {
         |store| {
             // TODO: handle open and closing correctly with creating and dropping store of child in Option

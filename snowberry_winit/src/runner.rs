@@ -64,9 +64,11 @@ impl<'life, C: Composable<'life>> ApplicationHandler for App<'life, C> {
     }
 
     fn suspended(&mut self, _event_loop: &winit::event_loop::ActiveEventLoop) {
-        println!("Suspended! Dropping composition..");
-        unsafe {
-            drop_in_place(self.composition.take().unwrap().get_unchecked_mut());
+        if let Some(comp) = self.composition.take() {
+            println!("Suspended! Dropping composition..");
+            unsafe {
+                drop_in_place(comp.get_unchecked_mut());
+            }
         }
     }
 
@@ -81,6 +83,17 @@ impl<'life, C: Composable<'life>> ApplicationHandler for App<'life, C> {
                 event_loop.exit();
             }
             _ => {}
+        }
+    }
+}
+
+impl<'life, C: Composable<'life>> Drop for App<'life, C> {
+    fn drop(&mut self) {
+        if let Some(comp) = self.composition.take() {
+            println!("Dropped! Dropping composition..");
+            unsafe {
+                drop_in_place(comp.get_unchecked_mut());
+            }
         }
     }
 }
