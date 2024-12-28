@@ -1,6 +1,6 @@
 use std::{marker::PhantomData, mem::MaybeUninit, pin::Pin};
 
-use crate::composable::Composable;
+use crate::{composable::Composable, composition::Composition};
 
 pub struct Stored<'scope, T: 'scope> {
     inner: T,
@@ -39,6 +39,21 @@ impl<'scope, Rest: 'scope, T: 'scope> Store<'scope, (Rest, T)> {
         let (store, slot) = self.split_off();
         let slot = unsafe { slot.map_unchecked_mut(|unpin| unpin.write(val)) };
         (store, slot)
+    }
+}
+
+impl<'scope, Rest: 'scope, C> Store<'scope, (Rest, Composition<'scope, C>)>
+where
+    C: Composable<'scope>,
+{
+    #[must_use]
+    pub fn compose(self, c: C) -> Store<'scope, Rest> {
+        let (store, mem) = self.split_off();
+        unsafe {
+            // SAFETY: drops because it is stored as `Composition<'scope, C>` in the tuple.
+            Composition::open(mem, c);
+        }
+        store
     }
 }
 

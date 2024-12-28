@@ -2,7 +2,6 @@ use std::{
     cell::Cell,
     mem::MaybeUninit,
     pin::{pin, Pin},
-    ptr::drop_in_place,
 };
 
 use snowberry::{composable::Composable, composition::Composition};
@@ -67,7 +66,7 @@ impl<'life, C: Composable<'life>> ApplicationHandler for App<'life, C> {
         if let Some(comp) = self.composition.take() {
             println!("Suspended! Dropping composition..");
             unsafe {
-                drop_in_place(comp.get_unchecked_mut());
+                comp.get_unchecked_mut().assume_init_drop();
             }
         }
     }
@@ -92,7 +91,7 @@ impl<'life, C: Composable<'life>> Drop for App<'life, C> {
         if let Some(comp) = self.composition.take() {
             println!("Dropped! Dropping composition..");
             unsafe {
-                drop_in_place(comp.get_unchecked_mut());
+                comp.get_unchecked_mut().assume_init_drop();
             }
         }
     }

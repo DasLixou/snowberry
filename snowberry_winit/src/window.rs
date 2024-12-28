@@ -1,27 +1,27 @@
-use std::{mem::MaybeUninit, pin::Pin, ptr::drop_in_place};
+use std::{mem::MaybeUninit, pin::Pin};
 
 use snowberry::{composable, composable::Composable, composition::Composition};
 use winit::window::Window;
 
 use crate::runner::LOOP;
 
-pub fn window<'life, C: Composable<'life>>(title: String, child: C) -> impl Composable<'life> {
-    composable! {
-        |store| {
-            // TODO: handle open and closing correctly with creating and dropping store of child in Option
-            let window = Window::default_attributes().with_title(title);
-            let window = LOOP.get().unwrap().create_window(window).unwrap();
-            let (store, _) = store.store_val(window);
-            let (store, window_child) = store.store_val(WindowChild::<'life, C> { mem: Some(MaybeUninit::uninit()) });
-            unsafe {
-                // TODO: lifetime shouldn't be the same but smaller
-                let wc = window_child.get_unchecked_mut();
-                let mem = Pin::new_unchecked(wc.mem());
-                Composition::open(mem, child);
-            }
-            store.end();
+pub fn window<'life>(title: String, child: impl Composable<'life>) -> impl Composable<'life> {
+    composable!(|store| {
+        // TODO: handle open and closing correctly with creating and dropping store of child in Option
+        let window = Window::default_attributes().with_title(title);
+        let window = LOOP.get().unwrap().create_window(window).unwrap();
+        let (store, _) = store.store_val(window);
+        let (store, window_child) = store.store_val(WindowChild {
+            mem: Some(MaybeUninit::uninit()),
+        });
+        unsafe {
+            // TODO: lifetime shouldn't be the same but smaller
+            let wc = window_child.get_unchecked_mut();
+            let mem = Pin::new_unchecked(wc.mem());
+            Composition::open(mem, child);
         }
-    }
+        store.end();
+    })
 
     /*struct WindowComposable<'life, C>(String, PhantomData<&'life C>);
     impl<'life, C: Composable<'life>> Composable<'life> for WindowComposable<'life, C> {
@@ -50,7 +50,7 @@ impl<'life, C: Composable<'life>> Drop for WindowChild<'life, C> {
     fn drop(&mut self) {
         if let Some(mut init) = self.mem.take() {
             unsafe {
-                drop_in_place(init.as_mut_ptr());
+                init.assume_init_drop();
             }
         }
     }
