@@ -24,6 +24,7 @@ pub struct Store<'scope, T> {
 }
 
 impl<'scope, Rest: 'scope, T: 'scope> Store<'scope, (Rest, T)> {
+    // TODO: this is unsafe, we need to assure that the user writes to it because we still safe it as `T` in the tuple..
     #[must_use]
     pub fn split_off(self) -> (Store<'scope, Rest>, Pin<&'scope mut MaybeUninit<T>>) {
         unsafe {
