@@ -4,6 +4,7 @@
 pub mod composable;
 pub mod composition;
 pub mod reaction_chain;
+pub mod responsible_pin;
 pub mod scope;
 pub mod simple;
 pub mod store;
