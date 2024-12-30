@@ -21,7 +21,7 @@ impl<'life, T> ResponsiblePin<'life, Uninit<T>> {
     pub fn init(self, val: T) -> ResponsiblePin<'life, T> {
         unsafe {
             // SAFETY: Uninit doesn't have a drop function.
-            let pin = self.into_inner();
+            let pin = self.raw_pin();
             // SAFETY: we don't move the underlying data.
             let pin = pin.map_unchecked_mut(|p| {
                 p.inner.write(val);

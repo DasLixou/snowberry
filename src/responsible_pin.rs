@@ -4,8 +4,6 @@ use std::{
     ptr::drop_in_place,
 };
 
-use crate::uninit::Uninit;
-
 /// A wrapper struct over [`Pin<&mut T>`] taking full responsibility over its drop behavior.
 /// This means that the pinned data itself won't be responsible for the drop, but this type here.
 /// This allows to cast types and change drop behavior of the underlying data while still remaining pinned.
@@ -45,7 +43,7 @@ impl<'life, T> ResponsiblePin<'life, T> {
     /// # Safety
     ///
     /// The caller must guarantee that the drop function of the underlying type will be called when the pin gets out of scope.
-    pub unsafe fn into_inner(self) -> Pin<&'life mut T> {
+    pub unsafe fn raw_pin(self) -> Pin<&'life mut T> {
         // SAFETY: the caller must assure that the data under the pin get's dropped.
         let mut me = ManuallyDrop::new(self);
         let ptr = &mut me.inner;
