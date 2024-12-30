@@ -1,4 +1,8 @@
-use std::{mem::MaybeUninit, pin::Pin, ptr::drop_in_place};
+use std::{
+    mem::{ManuallyDrop, MaybeUninit},
+    pin::Pin,
+    ptr::drop_in_place,
+};
 
 use crate::uninit::Uninit;
 
@@ -32,8 +36,7 @@ impl<'life, T> ResponsiblePin<'life, T> {
         unsafe {
             let pin = &mut self.inner;
             // SAFETY: this basically clones the Pin, which should be fine as we can't use ourselves as long as the return value exists.
-            // TODO: read or read_unaligned?
-            let pin: Pin<&'life mut T> = core::ptr::read_unaligned(pin as *mut _ as *const _);
+            let pin: Pin<&'life mut T> = core::ptr::read(pin as *mut _ as *const _);
             // SAFETY: lifetime of &mut is covariant, so making it smaller is fine
             pin
         }
@@ -42,11 +45,11 @@ impl<'life, T> ResponsiblePin<'life, T> {
     /// # Safety
     ///
     /// The caller must guarantee that the drop function of the underlying type will be called when the pin gets out of scope.
-    pub unsafe fn into_inner(mut self) -> Pin<&'life mut T> {
-        let ptr = &mut self.inner;
-        let pin: Pin<&'life mut T> = core::ptr::read_unaligned(ptr as *mut _ as *const _);
+    pub unsafe fn into_inner(self) -> Pin<&'life mut T> {
         // SAFETY: the caller must assure that the data under the pin get's dropped.
-        core::mem::forget(self);
+        let mut me = ManuallyDrop::new(self);
+        let ptr = &mut me.inner;
+        let pin: Pin<&'life mut T> = core::ptr::read(ptr as *mut _ as *const _);
         pin
     }
 }
@@ -56,10 +59,8 @@ impl<'life, T> Drop for ResponsiblePin<'life, T> {
         unsafe {
             let pin = &mut self.inner;
             // SAFETY: this basically clones the Pin, which should be fine as everything with the original struct is UB afterwards anyways.
-            // TODO: read or read_unaligned?
-            let pin: Pin<&'life mut T> = core::ptr::read_unaligned(pin as *mut _ as *const _);
+            let pin: Pin<&'life mut T> = core::ptr::read(pin as *mut _ as *const _);
             let raw = pin.get_unchecked_mut();
-            // TODO: are we always aligned?
             drop_in_place(raw);
         }
     }
