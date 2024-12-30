@@ -8,6 +8,7 @@ pub mod responsible_pin;
 pub mod scope;
 pub mod simple;
 pub mod store;
+pub mod uninit;
 
 pub mod prelude {
     pub use crate::scope::Scope;
