@@ -76,6 +76,7 @@ macro_rules! responsible_pin {
     };
 }
 
+/*
 fn main() {
     // SAFETY: we don't forget it
     responsible_pin!(let unsafe data = Uninit::uninit());
@@ -91,3 +92,4 @@ impl Drop for S {
         println!("{}", self.0);
     }
 }
+*/
