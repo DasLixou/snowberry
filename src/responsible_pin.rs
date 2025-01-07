@@ -1,8 +1,4 @@
-use std::{
-    mem::{ManuallyDrop, MaybeUninit},
-    pin::Pin,
-    ptr::drop_in_place,
-};
+use std::{mem::ManuallyDrop, pin::Pin, ptr::drop_in_place};
 
 /// A wrapper struct over [`Pin<&mut T>`] taking full responsibility over its drop behavior.
 /// This means that the pinned data itself won't be responsible for the drop, but this type here.
@@ -15,19 +11,12 @@ pub struct ResponsiblePin<'life, T> {
 impl<'life, T> ResponsiblePin<'life, T> {
     /// Creates a new [`ResponsiblePin`].
     ///
-    /// The `MaybeUninit` is only used for the actual pin data to not drop itself
-    /// and serves the purpose of a [`ManuallyDrop`], but without its limitations,
-    /// see https://doc.rust-lang.org/stable/core/mem/struct.ManuallyDrop.html#interaction-with-box
-    /// (tho I'm not sure if this limits us...)
-    ///
     /// # Safety
     ///
-    /// * The caller must guarantee that the underlying MaybeUninit is initialized.
+    /// * The caller must guarantee that the underlying T won't drop by itself.
     /// * The caller must also guarantee that the returned value will not be forgotten.
-    pub unsafe fn new_unchecked(inner: Pin<&'life mut MaybeUninit<T>>) -> Self {
-        Self {
-            inner: unsafe { inner.map_unchecked_mut(|pin| pin.assume_init_mut()) },
-        }
+    pub unsafe fn new_unchecked(inner: Pin<&'life mut T>) -> Self {
+        Self { inner: inner }
     }
 
     pub fn reborrow_pin<'a>(&'a mut self) -> Pin<&'a mut T> {
@@ -50,6 +39,27 @@ impl<'life, T> ResponsiblePin<'life, T> {
         let pin: Pin<&'life mut T> = core::ptr::read(ptr as *mut _ as *const _);
         pin
     }
+
+    pub unsafe fn map<F, U>(self, f: F) -> ResponsiblePin<'life, U>
+    where
+        F: FnOnce(&mut T) -> &mut U,
+    {
+        let pin = self.raw_pin();
+        let pin = pin.map_unchecked_mut(f);
+        ResponsiblePin::new_unchecked(pin)
+    }
+}
+
+impl<'life, A, B> ResponsiblePin<'life, (A, B)> {
+    pub fn split(self) -> (ResponsiblePin<'life, A>, ResponsiblePin<'life, B>) {
+        unsafe {
+            let inner = self.raw_pin().get_unchecked_mut();
+            (
+                ResponsiblePin::new_unchecked(Pin::new_unchecked(&mut inner.0)),
+                ResponsiblePin::new_unchecked(Pin::new_unchecked(&mut inner.1)),
+            )
+        }
+    }
 }
 
 impl<'life, T> Drop for ResponsiblePin<'life, T> {
@@ -68,10 +78,11 @@ impl<'life, T> Drop for ResponsiblePin<'life, T> {
 ///
 /// The given [`ResponsiblePin`] **must not be forgotten**.
 /// Thus, calling this macro requires an explicit unsafe.
+#[macro_export]
 macro_rules! responsible_pin {
     (let unsafe $name:ident = $($tokens:tt)*) => {
         let __responsible_pin = ::core::pin::pin!(::std::mem::MaybeUninit::new($($tokens)*));
-        let $name = unsafe { $crate::responsible_pin::ResponsiblePin::new_unchecked(__responsible_pin) };
+        let $name = unsafe { $crate::responsible_pin::ResponsiblePin::new_unchecked(__responsible_pin.map_unchecked_mut(|pin| pin.assume_init_mut())) };
     };
 }
 

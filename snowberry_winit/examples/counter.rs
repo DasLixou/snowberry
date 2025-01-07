@@ -1,10 +1,12 @@
-use std::cell::Cell;
+use std::{cell::Cell, mem::MaybeUninit, pin::Pin};
 
 use snowberry::{composable, composable::Composable};
 use snowberry_winit::{run_winit, window::window};
 
 fn main() {
+    let a = Bomb("Heloo");
     run_winit!(counter());
+    let _ = a;
 }
 
 fn counter<'l>() -> impl Composable<'l> {
@@ -14,6 +16,10 @@ fn counter<'l>() -> impl Composable<'l> {
             let (store, count) = store.store_val(Cell::new(0));
 
             let (store, _) = store.store_val(Bomb("root!"));
+
+            //panic!();
+
+            //let (store, _): (_, Pin<&mut MaybeUninit<Bomb>>) = store.split_off();
 
             let store = store.compose(button("-"));
             let store = store.compose(button("+"));

@@ -20,6 +20,7 @@ macro_rules! run_winit {
     ($($tokens:tt)*) => {
         let event_loop = ::winit::event_loop::EventLoop::new().unwrap();
 
+        //::snowberry::responsible_pin!(let unsafe composition = ::std::mem::MaybeUninit::uninit());
         let composition = ::std::pin::pin!(::std::mem::MaybeUninit::uninit());
 
         let mut app = $crate::runner::App {

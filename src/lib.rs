@@ -3,6 +3,8 @@
 
 pub mod composable;
 pub mod composition;
+pub mod ext_stack;
+pub mod generics_stack;
 pub mod reaction_chain;
 pub mod responsible_pin;
 pub mod scope;
