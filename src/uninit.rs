@@ -1,6 +1,6 @@
 use std::mem::MaybeUninit;
 
-use crate::responsible_pin::ResponsiblePin;
+use crate::{responsible_pin, responsible_pin::ResponsiblePin};
 
 #[repr(transparent)]
 pub struct Uninit<T> {
@@ -16,6 +16,15 @@ impl<T> Uninit<T> {
 }
 
 impl<'life, T> ResponsiblePin<'life, Uninit<T>> {
+    pub fn with<F, U>(f: F)
+    where
+        for<'a> F: FnOnce(ResponsiblePin<'a, Uninit<T>>) -> ResponsiblePin<'a, T>,
+    {
+        responsible_pin!(let unsafe pinned = Uninit::<T>::uninit());
+        let pinned = f(pinned);
+        drop(pinned);
+    }
+
     /// # Safety reminder
     ///
     /// The returned value still **must not be forgotten**.
