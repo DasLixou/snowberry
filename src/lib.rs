@@ -5,7 +5,7 @@ pub mod composable;
 pub mod composition;
 pub mod context;
 pub mod ext_stack;
-pub mod generics_stack;
+pub mod recursive;
 pub mod scope;
 pub mod simple;
 

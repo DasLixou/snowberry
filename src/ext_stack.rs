@@ -1,6 +1,9 @@
-use std::{marker::PhantomData, mem::MaybeUninit};
+use std::{
+    marker::PhantomData,
+    mem::{ManuallyDrop, MaybeUninit},
+};
 
-use crate::generics_stack::RecursiveTuple;
+use crate::recursive::{Rec, Recursive};
 
 #[repr(transparent)]
 pub struct ExtStack<T> {
@@ -39,9 +42,8 @@ impl<T> ExtStack<T> {
 struct Owned<'life, T>(&'life mut T);
 impl<'life, T> Owned<'life, T> {
     fn defuse(self) -> &'life mut T {
-        let inner = unsafe { &mut *(self.0 as *mut _) };
-        core::mem::forget(self);
-        inner
+        let this = ManuallyDrop::new(self);
+        unsafe { core::ptr::read(&this.0) }
     }
 }
 impl<'life, T> Drop for Owned<'life, T> {
@@ -57,22 +59,25 @@ pub struct ExtStackRef<'life, Init, Todo> {
     todo: PhantomData<Todo>,
 }
 
-// TODO: drop order is wrong!
-impl<'life, Init, Todo: RecursiveTuple> ExtStackRef<'life, Init, Todo> {
-    pub fn store(self, val: Todo::Pop) -> ExtStackRef<'life, (Init, Todo::Pop), Todo::Remainder> {
+impl<'life, Init, Todo: Recursive> ExtStackRef<'life, Init, Todo> {
+    pub fn store(
+        self,
+        val: Todo::Pop,
+    ) -> ExtStackRef<'life, Rec<Init, Todo::Pop>, Todo::Remainder> {
         unsafe {
-            // TODO: either we get a layout guarantee for tuples or we should make our own type with guaranteed layout for nesting
             let extended_inner = core::mem::transmute::<
                 Owned<'_, Init>,
-                Owned<'_, (Init, MaybeUninit<Todo::Pop>)>,
+                Owned<'_, Rec<Init, MaybeUninit<Todo::Pop>>>,
             >(self.inner);
-            let (inner, next_uninit) = extended_inner.defuse();
+            let (inner, next_uninit) = extended_inner.defuse().split();
             let inner = Owned(inner);
 
             next_uninit.write(val);
 
-            let inner_with_next =
-                core::mem::transmute::<Owned<'life, Init>, Owned<'life, (Init, Todo::Pop)>>(inner);
+            let inner_with_next = core::mem::transmute::<
+                Owned<'life, Init>,
+                Owned<'life, Rec<Init, Todo::Pop>>,
+            >(inner);
             ExtStackRef {
                 inner: inner_with_next,
                 todo: PhantomData,
