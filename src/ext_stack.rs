@@ -57,6 +57,7 @@ pub struct ExtStackRef<'life, Init, Todo> {
     todo: PhantomData<Todo>,
 }
 
+// TODO: drop order is wrong!
 impl<'life, Init, Todo: RecursiveTuple> ExtStackRef<'life, Init, Todo> {
     pub fn store(self, val: Todo::Pop) -> ExtStackRef<'life, (Init, Todo::Pop), Todo::Remainder> {
         unsafe {
@@ -90,7 +91,7 @@ mod tests {
     use crate::ext_stack::ExtStack;
 
     #[test]
-    fn assert_correct_drop() {
+    fn correct_drop_amount() {
         static COUNT: AtomicU8 = AtomicU8::new(0);
         struct Dropper;
         impl Drop for Dropper {
@@ -112,5 +113,10 @@ mod tests {
         });
         assert!(res.is_err());
         assert_eq!(COUNT.load(Ordering::Relaxed), 2);
+    }
+
+    #[test]
+    fn correct_drop_order() {
+        todo!()
     }
 }

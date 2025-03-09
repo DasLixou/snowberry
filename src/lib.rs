@@ -3,13 +3,11 @@
 
 pub mod composable;
 pub mod composition;
+pub mod context;
 pub mod ext_stack;
 pub mod generics_stack;
-pub mod reaction_chain;
-pub mod responsible_pin;
 pub mod scope;
 pub mod simple;
-pub mod store;
 
 pub mod prelude {
     pub use crate::scope::Scope;
