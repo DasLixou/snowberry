@@ -1,6 +1,6 @@
 use std::{marker::PhantomData, mem::MaybeUninit};
 
-use crate::{generics_stack::RecursiveTuple, responsible_pin::ResponsiblePin, uninit::Uninit};
+use crate::generics_stack::RecursiveTuple;
 
 #[repr(transparent)]
 pub struct ExtStack<T> {
@@ -8,61 +8,70 @@ pub struct ExtStack<T> {
 }
 
 impl<T> ExtStack<T> {
-    pub fn extend_for<'life, F>(
-        me: ResponsiblePin<'life, Uninit<Self>>,
-        f: F,
-    ) -> ResponsiblePin<'life, Self>
+    pub fn extend_for<F>(f: F) -> Self
     where
-        F: FnOnce(ExtStackRef<'life, (), T>) -> ExtStackRef<'life, T, ()>,
+        for<'life> F: FnOnce(ExtStackRef<'life, (), T>) -> ExtStackRef<'life, T, ()>,
     {
-        unsafe {
-            let inner = me.map_uninit(|me| &raw mut (*me).inner);
-            let with_init = inner.map(|inner: &mut Uninit<T>| {
-                let ptr = inner as *mut _;
-                let ptr = ptr as *mut ();
-                &mut *ptr
-            });
-            let ext_ref = ExtStackRef {
-                inner: with_init,
-                todo: PhantomData::<T>,
-            };
+        let mut uninit: MaybeUninit<T> = MaybeUninit::uninit();
+
+        fn cast_same_lifetime<'a, T>(from: &'a mut MaybeUninit<T>) -> &'a mut () {
+            unsafe { &mut *from.as_mut_ptr().cast() }
+        }
+
+        let uninit_ref: &mut MaybeUninit<T> = &mut uninit;
+        let uninit_ref: &mut () = cast_same_lifetime(uninit_ref);
+        let ext_ref = ExtStackRef {
+            // SAFETY: We can only run the drop of the inner type after calling `assume_init`, which we only do at the very end, after we defused the owned wrapper.
+            inner: Owned(uninit_ref),
+            todo: PhantomData::<T>,
+        };
+        {
             let ext_ref = f(ext_ref);
-            let inner = ext_ref.inner;
-            inner.map(|mut inner| &mut *(&raw mut inner).cast::<ExtStack<_>>())
+            let _ = ext_ref.inner.defuse();
+        }
+        ExtStack {
+            inner: unsafe { uninit.assume_init() },
+        }
+    }
+}
+
+#[repr(transparent)]
+struct Owned<'life, T>(&'life mut T);
+impl<'life, T> Owned<'life, T> {
+    fn defuse(self) -> &'life mut T {
+        let inner = unsafe { &mut *(self.0 as *mut _) };
+        core::mem::forget(self);
+        inner
+    }
+}
+impl<'life, T> Drop for Owned<'life, T> {
+    fn drop(&mut self) {
+        unsafe {
+            core::ptr::drop_in_place(self.0);
         }
     }
 }
 
 pub struct ExtStackRef<'life, Init, Todo> {
-    inner: ResponsiblePin<'life, Init>,
+    inner: Owned<'life, Init>,
     todo: PhantomData<Todo>,
 }
 
 impl<'life, Init, Todo: RecursiveTuple> ExtStackRef<'life, Init, Todo> {
     pub fn store(self, val: Todo::Pop) -> ExtStackRef<'life, (Init, Todo::Pop), Todo::Remainder> {
-        self.store_with(|mu| mu.write(val))
-    }
-
-    pub fn store_with<F>(self, f: F) -> ExtStackRef<'life, (Init, Todo::Pop), Todo::Remainder>
-    where
-        F: FnOnce(&mut MaybeUninit<Todo::Pop>) -> &mut Todo::Pop,
-    {
         unsafe {
-            let inner_with_next_uninit = core::mem::transmute::<
-                ResponsiblePin<'life, Init>,
-                ResponsiblePin<'life, (Init, Uninit<Todo::Pop>)>,
+            // TODO: either we get a layout guarantee for tuples or we should make our own type with guaranteed layout for nesting
+            let extended_inner = core::mem::transmute::<
+                Owned<'_, Init>,
+                Owned<'_, (Init, MaybeUninit<Todo::Pop>)>,
             >(self.inner);
-            let (inner, next_uninit) = inner_with_next_uninit.split();
-            // TODO: clean up
-            let _ = next_uninit.map_uninit(|next: *mut <Todo as RecursiveTuple>::Pop| {
-                let mu = &mut *next.cast::<MaybeUninit<_>>();
-                let _ = f(mu);
-                next
-            });
-            let inner_with_next = core::mem::transmute::<
-                ResponsiblePin<'life, Init>,
-                ResponsiblePin<'life, (Init, Todo::Pop)>,
-            >(inner);
+            let (inner, next_uninit) = extended_inner.defuse();
+            let inner = Owned(inner);
+
+            next_uninit.write(val);
+
+            let inner_with_next =
+                core::mem::transmute::<Owned<'life, Init>, Owned<'life, (Init, Todo::Pop)>>(inner);
             ExtStackRef {
                 inner: inner_with_next,
                 todo: PhantomData,
@@ -78,7 +87,7 @@ mod tests {
         sync::atomic::{AtomicU8, Ordering},
     };
 
-    use crate::{ext_stack::ExtStack, responsible_pin, uninit::Uninit};
+    use crate::ext_stack::ExtStack;
 
     #[test]
     fn assert_correct_drop() {
@@ -90,14 +99,12 @@ mod tests {
             }
         }
         let res = catch_unwind(|| {
-            responsible_pin!(let unsafe stack = Uninit::uninit());
-            let stack = ExtStack::extend_for(stack, |cx| {
+            #[allow(unused_variables, unreachable_code)]
+            let stack = ExtStack::extend_for(|cx| {
                 let cx = cx.store(Dropper);
                 let cx = cx.store(Dropper);
-                let cx = cx.store_with(|a| {
-                    a.write(Dropper); // this won't be dropped
-                    panic!();
-                });
+                panic!();
+                let cx = cx.store(Dropper);
                 let cx = cx.store(Dropper);
                 cx
             });
