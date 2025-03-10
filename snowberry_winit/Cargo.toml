@@ -1,8 +1,8 @@
 [package]
 name = "snowberry_winit"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 
 [dependencies]
 snowberry = { path = ".." }
-winit = "0.30.7"
+winit = { version = "0.30.7" }

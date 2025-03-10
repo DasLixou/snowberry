@@ -1,7 +1,7 @@
-use std::{cell::Cell, mem::MaybeUninit, pin::Pin};
+use std::cell::Cell;
 
-use snowberry::{composable, composable::Composable};
-use snowberry_winit::{run_winit, window::window};
+use snowberry::{composable, composable::Composable, composition::Composition};
+use snowberry_winit::{run_winit, window::window, winit::window::Window};
 
 fn main() {
     let a = Bomb("Heloo");
@@ -11,35 +11,30 @@ fn main() {
 
 fn counter<'l>() -> impl Composable<'l> {
     window(
-        String::from("snowberry counter"),
-        composable!(|store| {
-            let (store, count) = store.store_val(Cell::new(0));
+        Window::default_attributes().with_title("my snowberry counter :3"),
+        composable!(|cx| {
+            let cx = cx.store(Cell::new(0));
 
-            let (store, _) = store.store_val(Bomb("root!"));
+            let cx = cx.store(Bomb("root!"));
 
-            //panic!();
+            let cx = cx.store(Composition::open(button("-")));
+            let cx = cx.store(Composition::open(button("+")));
 
-            //let (store, _): (_, Pin<&mut MaybeUninit<Bomb>>) = store.split_off();
-
-            let store = store.compose(button("-"));
-            let store = store.compose(button("+"));
-
-            println!("Currently {}", count.get());
-            store.end();
+            // println!("Currently {}", count.get());
+            cx
         }),
     )
 }
 
 fn button<'l>(label: &'l str) -> impl Composable<'l> {
-    composable!(move |store| {
+    composable!(move |cx| {
         println!("Button '{label}'");
-        let (store, _) = store.store_val(Bomb("a button :3"));
-        store.end();
+        let cx = cx.store(Bomb("a button :3"));
+        cx
     })
 }
 
 struct Bomb(&'static str);
-
 impl Drop for Bomb {
     fn drop(&mut self) {
         println!("kapow '{}'", self.0);
