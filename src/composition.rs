@@ -27,10 +27,10 @@ impl<'scope, C: Composable<'scope>> Composition<'scope, C> {
         Composition { scope, stored }
     }
 
-    pub fn open<'cx, I, T, D: Copy + 'scope>(
-        cx: Context<'cx, I, T, D>,
+    pub fn open<'cx, I, D: Copy + 'scope>(
+        cx: Context<'cx, I, D>,
         composable: C,
-    ) -> (Context<'cx, I, T, D>, Self)
+    ) -> (Context<'cx, I, D>, Self)
     where
         C: Composable<'scope, Down = LensTable<D>>,
     {

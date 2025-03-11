@@ -9,13 +9,13 @@ pub trait Composable<'life>: 'life {
 
     fn compose<'cx>(
         self,
-        cx: Context<'cx, (), Self::Store, Self::Down>,
-    ) -> Context<'cx, Self::Store, (), Self::Down>;
+        cx: Context<'cx, (), Self::Down>,
+    ) -> Context<'cx, Self::Store, Self::Down>;
 }
 
 pub fn make_composable<'life, F, S, D>(closure: F) -> impl Composable<'life, Down = D>
 where
-    for<'cx> F: FnOnce(Context<'cx, (), S, D>) -> Context<'cx, S, (), D> + 'life,
+    for<'cx> F: FnOnce(Context<'cx, (), D>) -> Context<'cx, S, D> + 'life,
     S: 'life,
     D: Copy + 'life,
 {
@@ -25,16 +25,13 @@ where
     }
     impl<'life, F, S, D: Copy> Composable<'life> for MyComposable<'life, F, S, D>
     where
-        for<'cx> F: FnOnce(Context<'cx, (), S, D>) -> Context<'cx, S, (), D> + 'life,
+        for<'cx> F: FnOnce(Context<'cx, (), D>) -> Context<'cx, S, D> + 'life,
         S: 'life,
     {
         type Store = S;
         type Down = D;
 
-        fn compose<'cx>(
-            self,
-            cx: Context<'cx, (), Self::Store, D>,
-        ) -> Context<'cx, Self::Store, (), D> {
+        fn compose<'cx>(self, cx: Context<'cx, (), D>) -> Context<'cx, Self::Store, D> {
             (self.closure)(cx)
         }
     }

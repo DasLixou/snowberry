@@ -1,9 +1,6 @@
-use std::{
-    marker::PhantomData,
-    mem::{ManuallyDrop, MaybeUninit},
-};
+use std::mem::{ManuallyDrop, MaybeUninit};
 
-use crate::recursive::{Rec, Recursive};
+use crate::recursive::Rec;
 
 #[repr(transparent)]
 pub struct ExtStack<T> {
@@ -13,7 +10,7 @@ pub struct ExtStack<T> {
 impl<T> ExtStack<T> {
     pub fn extend_for<F>(f: F) -> Self
     where
-        for<'life> F: FnOnce(ExtStackRef<'life, (), T>) -> ExtStackRef<'life, T, ()>,
+        for<'life> F: FnOnce(ExtStackRef<'life, ()>) -> ExtStackRef<'life, T>,
     {
         let mut uninit: MaybeUninit<T> = MaybeUninit::uninit();
 
@@ -26,7 +23,6 @@ impl<T> ExtStack<T> {
         let ext_ref = ExtStackRef {
             // SAFETY: We can only run the drop of the inner type after calling `assume_init`, which we only do at the very end, after we defused the owned wrapper.
             inner: Owned(uninit_ref),
-            todo: PhantomData::<T>,
         };
         {
             let ext_ref = f(ext_ref);
@@ -54,39 +50,30 @@ impl<'life, T> Drop for Owned<'life, T> {
     }
 }
 
-pub struct ExtStackRef<'life, Init, Todo> {
+pub struct ExtStackRef<'life, Init> {
     inner: Owned<'life, Init>,
-    todo: PhantomData<Todo>,
 }
 
-impl<'life, Init, Todo> ExtStackRef<'life, Init, Todo> {
+impl<'life, Init> ExtStackRef<'life, Init> {
     pub(crate) unsafe fn ptr_mut(&self) -> *mut () {
         self.inner.0 as *const _ as *mut ()
     }
-}
 
-impl<'life, Init, Todo: Recursive> ExtStackRef<'life, Init, Todo> {
-    pub fn store(
-        self,
-        val: Todo::Pop,
-    ) -> ExtStackRef<'life, Rec<Init, Todo::Pop>, Todo::Remainder> {
+    pub fn store<T>(self, val: T) -> ExtStackRef<'life, Rec<Init, T>> {
         unsafe {
             let extended_inner = core::mem::transmute::<
                 Owned<'_, Init>,
-                Owned<'_, Rec<Init, MaybeUninit<Todo::Pop>>>,
+                Owned<'_, Rec<Init, MaybeUninit<T>>>,
             >(self.inner);
             let (inner, next_uninit) = extended_inner.defuse().split();
             let inner = Owned(inner);
 
             next_uninit.write(val);
 
-            let inner_with_next = core::mem::transmute::<
-                Owned<'life, Init>,
-                Owned<'life, Rec<Init, Todo::Pop>>,
-            >(inner);
+            let inner_with_next =
+                core::mem::transmute::<Owned<'life, Init>, Owned<'life, Rec<Init, T>>>(inner);
             ExtStackRef {
                 inner: inner_with_next,
-                todo: PhantomData,
             }
         }
     }

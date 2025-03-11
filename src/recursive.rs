@@ -21,17 +21,3 @@ impl<D, T> Drop for Rec<D, T> {
         }
     }
 }
-// (((), A), B)
-pub trait Recursive {
-    type Pop;
-    type Remainder;
-}
-impl<A: Recursive, B> Recursive for Rec<A, B> {
-    type Pop = A::Pop;
-    type Remainder = Rec<A::Remainder, B>;
-}
-
-impl<A> Recursive for Rec<(), A> {
-    type Pop = A;
-    type Remainder = ();
-}
