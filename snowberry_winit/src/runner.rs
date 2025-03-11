@@ -28,12 +28,12 @@ pub struct App<'life, C: Composable<'life>> {
     pub composition: Option<Composition<'life, C>>,
 }
 
-impl<'life, C: Composable<'life>> ApplicationHandler for App<'life, C> {
+impl<'life, C: Composable<'life, Down = ()>> ApplicationHandler for App<'life, C> {
     fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
         unsafe {
             LOOP.set(Some(core::mem::transmute(event_loop)));
         }
-        self.composition = Some(Composition::open(self.composable.take().unwrap()));
+        self.composition = Some(Composition::root(self.composable.take().unwrap()));
         LOOP.set(None);
     }
 

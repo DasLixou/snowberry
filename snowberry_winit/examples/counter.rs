@@ -9,7 +9,7 @@ fn main() {
     let _ = a;
 }
 
-fn counter<'l>() -> impl Composable<'l> {
+fn counter<'l, D: Copy + 'l>() -> impl Composable<'l, Down = D> {
     window(
         Window::default_attributes().with_title("my snowberry counter :3"),
         composable!(|cx| {
@@ -17,8 +17,19 @@ fn counter<'l>() -> impl Composable<'l> {
 
             let cx = cx.store(Bomb("root!"));
 
-            let cx = cx.store(Composition::open(button("-")));
-            let cx = cx.store(Composition::open(button("+")));
+            let (cx, comp) = Composition::open(cx, button("-"));
+            let cx = cx.store(comp);
+            let (cx, comp) = Composition::open(cx, button("+"));
+            let cx = cx.store(comp);
+
+            let (cx, comp) = Composition::open(
+                cx,
+                window(
+                    Window::default_attributes().with_title("subwindow"),
+                    composable!(|cx| { cx }),
+                ),
+            );
+            let cx = cx.store(comp);
 
             // println!("Currently {}", count.get());
             cx
@@ -26,7 +37,7 @@ fn counter<'l>() -> impl Composable<'l> {
     )
 }
 
-fn button<'l>(label: &'l str) -> impl Composable<'l> {
+fn button<'l, D: Copy + 'l>(label: &'l str) -> impl Composable<'l, Down = D> {
     composable!(move |cx| {
         println!("Button '{label}'");
         let cx = cx.store(Bomb("a button :3"));

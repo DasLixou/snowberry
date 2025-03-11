@@ -6,16 +6,17 @@ fn main() {
     let _ = bomb;
 }
 
-fn simple<'l>() -> impl Composable<'l> {
+fn simple<'l, D: Copy + 'l>() -> impl Composable<'l, Down = D> {
     composable!(|cx| {
         let cx = cx.store(Bomb("42"));
         let cx = cx.store(Bomb("another one :3"));
-        let cx = cx.store(Composition::open(window()));
+        let (cx, comp) = Composition::open(cx, window());
+        let cx = cx.store(comp);
         cx
     })
 }
 
-fn window<'l>() -> impl Composable<'l> {
+fn window<'l, D: Copy + 'l>() -> impl Composable<'l, Down = D> {
     composable!(|cx| {
         let cx = cx.store(Bomb("..and the window second :>"));
         let cx = cx.store(Bomb("Uninitialize render cx first.."));

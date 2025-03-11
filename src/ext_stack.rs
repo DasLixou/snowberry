@@ -59,6 +59,12 @@ pub struct ExtStackRef<'life, Init, Todo> {
     todo: PhantomData<Todo>,
 }
 
+impl<'life, Init, Todo> ExtStackRef<'life, Init, Todo> {
+    pub(crate) unsafe fn ptr_mut(&self) -> *mut () {
+        self.inner.0 as *const _ as *mut ()
+    }
+}
+
 impl<'life, Init, Todo: Recursive> ExtStackRef<'life, Init, Todo> {
     pub fn store(
         self,
