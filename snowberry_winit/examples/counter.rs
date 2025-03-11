@@ -1,6 +1,6 @@
 use std::cell::Cell;
 
-use snowberry::{composable, composable::Composable, composition::Composition};
+use snowberry::{composable, composable::Composable};
 use snowberry_winit::{run_winit, window::window, winit::window::Window};
 
 fn main() {
@@ -17,19 +17,13 @@ fn counter<'l, D: Copy + 'l>() -> impl Composable<'l, Down = D> {
 
             let cx = cx.store(Bomb("root!"));
 
-            let (cx, comp) = Composition::open(cx, button("-"));
-            let cx = cx.store(comp);
-            let (cx, comp) = Composition::open(cx, button("+"));
-            let cx = cx.store(comp);
+            let cx = cx.compose(button("-"));
+            let cx = cx.compose(button("+"));
 
-            let (cx, comp) = Composition::open(
-                cx,
-                window(
-                    Window::default_attributes().with_title("subwindow"),
-                    composable!(|cx| { cx }),
-                ),
-            );
-            let cx = cx.store(comp);
+            let cx = cx.compose(window(
+                Window::default_attributes().with_title("subwindow"),
+                composable!(|cx| { cx }),
+            ));
 
             // println!("Currently {}", count.get());
             cx

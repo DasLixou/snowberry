@@ -1,4 +1,4 @@
-use snowberry::{composable, composable::Composable, composition::Composition};
+use snowberry::{composable, composable::Composable};
 
 fn main() {
     let bomb = Bomb("static");
@@ -10,8 +10,7 @@ fn simple<'l, D: Copy + 'l>() -> impl Composable<'l, Down = D> {
     composable!(|cx| {
         let cx = cx.store(Bomb("42"));
         let cx = cx.store(Bomb("another one :3"));
-        let (cx, comp) = Composition::open(cx, window());
-        let cx = cx.store(comp);
+        let cx = cx.compose(window());
         cx
     })
 }
