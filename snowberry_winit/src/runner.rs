@@ -1,6 +1,6 @@
 use std::cell::Cell;
 
-use snowberry::{composable::Composable, composition::Composition};
+use snowberry::{composable_::Composable, composition::Composition};
 use winit::{application::ApplicationHandler, event_loop::ActiveEventLoop};
 
 thread_local! {

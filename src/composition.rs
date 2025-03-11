@@ -1,5 +1,5 @@
 use crate::{
-    composable::Composable, context::Context, ext_stack::ExtStack, lens_table::LensTable,
+    composable_::Composable, context::Context, ext_stack::ExtStack, lens_table::LensTable,
     scope::Scope,
 };
 

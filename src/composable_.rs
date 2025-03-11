@@ -47,6 +47,6 @@ where
 #[macro_export]
 macro_rules! composable {
     ($($tokens:tt)*) => {{
-        ::snowberry::composable::make_composable($($tokens)*)
+        ::snowberry::composable_::make_composable($($tokens)*)
     }};
 }

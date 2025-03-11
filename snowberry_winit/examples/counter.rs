@@ -1,6 +1,6 @@
 use std::cell::Cell;
 
-use snowberry::{composable, composable::Composable};
+use snowberry::{composable, composable_::Composable};
 use snowberry_winit::{run_winit, window::window, winit::window::Window};
 
 fn main() {

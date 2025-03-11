@@ -1,4 +1,4 @@
-use snowberry::{composable, composable::Composable};
+use snowberry::{composable, composable_::Composable};
 
 fn main() {
     let bomb = Bomb("static");

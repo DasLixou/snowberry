@@ -1,5 +1,5 @@
 use snowberry::{
-    composable, composable::Composable, composition::Composition, lens_table::LensTable,
+    composable, composable_::Composable, composition::Composition, lens_table::LensTable,
 };
 use winit::window::WindowAttributes;
 
