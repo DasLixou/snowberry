@@ -59,7 +59,7 @@ impl<'life, Init> ExtStackRef<'life, Init> {
         self.inner.0 as *const _ as *mut ()
     }
 
-    pub fn store<T>(self, val: T) -> ExtStackRef<'life, Rec<Init, T>> {
+    pub fn store<T>(self, val: T) -> (ExtStackRef<'life, Rec<Init, T>>, usize) {
         unsafe {
             let extended_inner = core::mem::transmute::<
                 Owned<'_, Init>,
@@ -72,9 +72,12 @@ impl<'life, Init> ExtStackRef<'life, Init> {
 
             let inner_with_next =
                 core::mem::transmute::<Owned<'life, Init>, Owned<'life, Rec<Init, T>>>(inner);
-            ExtStackRef {
-                inner: inner_with_next,
-            }
+            (
+                ExtStackRef {
+                    inner: inner_with_next,
+                },
+                Rec::<Init, T>::offset(),
+            )
         }
     }
 }
@@ -100,11 +103,11 @@ mod tests {
         let res = catch_unwind(|| {
             #[allow(unused_variables, unreachable_code)]
             let stack = ExtStack::extend_for(|cx| {
-                let cx = cx.store(Dropper);
-                let cx = cx.store(Dropper);
+                let (cx, _) = cx.store(Dropper);
+                let (cx, _) = cx.store(Dropper);
                 panic!();
-                let cx = cx.store(Dropper);
-                let cx = cx.store(Dropper);
+                let (cx, _) = cx.store(Dropper);
+                let (cx, _) = cx.store(Dropper);
                 cx
             });
             drop(stack);

@@ -8,17 +8,21 @@ fn main() {
 
 fn simple<'l, D: Copy + 'l>() -> impl Composable<'l, Down = D> {
     composable!(|cx| {
-        let cx = cx.store(Bomb("42"));
-        let cx = cx.store(Bomb("another one :3"));
+        let (cx, _) = cx.store(Bomb("42"));
+        let (cx, _) = cx.store(Bomb("another one :3"));
         let cx = cx.compose(window());
+
+        let (cx, num) = cx.store("Lenses work :D");
+        println!("{}", cx[num]);
+
         cx
     })
 }
 
 fn window<'l, D: Copy + 'l>() -> impl Composable<'l, Down = D> {
     composable!(|cx| {
-        let cx = cx.store(Bomb("..and the window second :>"));
-        let cx = cx.store(Bomb("Uninitialize render cx first.."));
+        let (cx, _) = cx.store(Bomb("..and the window second :>"));
+        let (cx, _) = cx.store(Bomb("Uninitialize render cx first.."));
         cx
     })
 }

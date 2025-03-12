@@ -10,7 +10,7 @@ pub fn window<'life, D: Copy + 'life>(
     composable!(|cx| {
         // TODO: handle open and closing correctly with creating and dropping store of child in Option
         let window = LOOP.get().unwrap().create_window(attributes).unwrap();
-        let cx = cx.store(window);
+        let (cx, _) = cx.store(window);
         // TODO: provide access to window down the tree
         let cx = cx.compose(child);
         cx

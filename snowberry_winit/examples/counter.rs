@@ -13,9 +13,9 @@ fn counter<'l, D: Copy + 'l>() -> impl Composable<'l, Down = D> {
     window(
         Window::default_attributes().with_title("my snowberry counter :3"),
         composable!(|cx| {
-            let cx = cx.store(Cell::new(0));
+            let (cx, _) = cx.store(Cell::new(0));
 
-            let cx = cx.store(Bomb("root!"));
+            let (cx, _) = cx.store(Bomb("root!"));
 
             let cx = cx.compose(button("-"));
             let cx = cx.compose(button("+"));
@@ -34,7 +34,7 @@ fn counter<'l, D: Copy + 'l>() -> impl Composable<'l, Down = D> {
 fn button<'l, D: Copy + 'l>(label: &'l str) -> impl Composable<'l, Down = D> {
     composable!(move |cx| {
         println!("Button '{label}'");
-        let cx = cx.store(Bomb("a button :3"));
+        let (cx, _) = cx.store(Bomb("a button :3"));
         cx
     })
 }
