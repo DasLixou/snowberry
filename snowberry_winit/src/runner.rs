@@ -1,11 +1,9 @@
-use std::cell::Cell;
-
-use snowberry::{composable_::Composable, composition::Composition};
+use snowberry::{
+    composable_::Composable,
+    composition::Composition,
+    environment::{Envy, WithEnv},
+};
 use winit::{application::ApplicationHandler, event_loop::ActiveEventLoop};
-
-thread_local! {
-    pub(crate) static LOOP: Cell<Option<&'static ActiveEventLoop>> = Cell::new(None);
-}
 
 // TODO: get rid of that as a macro and make stuff private again
 #[macro_export]
@@ -22,19 +20,22 @@ macro_rules! run_winit {
     };
 }
 
+pub struct WinitLoop(pub ActiveEventLoop);
+impl Envy for &WinitLoop {}
+
 pub struct App<'life, C: Composable<'life>> {
     // TODO: Change this to FnMut where we can request a new composable for every resume or just make Composable take `&mut self` instead of `self`
     pub composable: Option<C>,
     pub composition: Option<Composition<'life, C>>,
 }
 
-impl<'life, C: Composable<'life, Down = ()>> ApplicationHandler for App<'life, C> {
+impl<'life, C> ApplicationHandler for App<'life, C>
+where
+    for<'e> C: Composable<'life, Down = (), Env = ((), &WinitLoop)>,
+{
     fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
-        unsafe {
-            LOOP.set(Some(core::mem::transmute(event_loop)));
-        }
-        self.composition = Some(Composition::root(self.composable.take().unwrap()));
-        LOOP.set(None);
+        let env = ((), &WinitLoop(*event_loop));
+        self.composition = Some(Composition::root(self.composable.take().unwrap(), env));
     }
 
     fn suspended(&mut self, _event_loop: &winit::event_loop::ActiveEventLoop) {

@@ -2,42 +2,72 @@ use std::mem::{ManuallyDrop, MaybeUninit};
 
 use crate::recursive::Rec;
 
-#[repr(transparent)]
-pub struct ExtStack<T> {
-    inner: T,
-}
+// #[repr(transparent)]
+// pub struct ExtStack<T> {
+//     inner: T,
+// }
 
-impl<T> ExtStack<T> {
-    pub fn extend_for<F>(f: F) -> Self
-    where
-        for<'life> F: FnOnce(ExtStackRef<'life, ()>) -> ExtStackRef<'life, T>,
-    {
-        let mut uninit: MaybeUninit<T> = MaybeUninit::uninit();
+#[macro_export]
+macro_rules! extend_for {
+    ($f:expr) => {{
+        use ::core::mem::MaybeUninit;
+        use $crate::ext_stack::{ExtStackRef, Owned};
+
+        let mut uninit: MaybeUninit<_> = MaybeUninit::uninit();
 
         fn cast_same_lifetime<'a, T>(from: &'a mut MaybeUninit<T>) -> &'a mut () {
             unsafe { &mut *from.as_mut_ptr().cast() }
         }
 
-        let uninit_ref: &mut MaybeUninit<T> = &mut uninit;
+        let uninit_ref: &mut MaybeUninit<_> = &mut uninit;
         let uninit_ref: &mut () = cast_same_lifetime(uninit_ref);
         let ext_ref = ExtStackRef {
             // SAFETY: We can only run the drop of the inner type after calling `assume_init`, which we only do at the very end, after we defused the owned wrapper.
             inner: Owned(uninit_ref),
         };
         {
-            let ext_ref = f(ext_ref);
+            fn call<'life, T>(closure: impl FnOnce(ExtStackRef<'life, ()>) -> ExtStackRef<'life, T>, ext_ref: ExtStackRef<'life, ()>) -> ExtStackRef<'life, T> {
+                closure(ext_ref)
+            }
+            let ext_ref = call(($f), ext_ref);
             let _ = ext_ref.inner.defuse();
         }
-        ExtStack {
-            inner: unsafe { uninit.assume_init() },
-        }
-    }
+        unsafe { uninit.assume_init() }
+    }};
 }
 
+// impl<T> ExtStack<T> {
+//     pub fn extend_for<'life, F>(f: F) -> Self
+//     where
+//         F: FnOnce(ExtStackRef<'life, ()>) -> ExtStackRef<'life, T>,
+//         T: 'life,
+//     {
+//         let mut uninit: MaybeUninit<T> = MaybeUninit::uninit();
+
+//         fn cast_same_lifetime<'a, T>(from: &'a mut MaybeUninit<T>) -> &'a mut () {
+//             unsafe { &mut *from.as_mut_ptr().cast() }
+//         }
+
+//         let uninit_ref: &mut MaybeUninit<T> = &mut uninit;
+//         let uninit_ref: &mut () = cast_same_lifetime(uninit_ref);
+//         let ext_ref = ExtStackRef {
+//             // SAFETY: We can only run the drop of the inner type after calling `assume_init`, which we only do at the very end, after we defused the owned wrapper.
+//             inner: Owned(uninit_ref),
+//         };
+//         {
+//             let ext_ref = f(ext_ref);
+//             let _ = ext_ref.inner.defuse();
+//         }
+//         ExtStack {
+//             inner: unsafe { uninit.assume_init() },
+//         }
+//     }
+// }
+
 #[repr(transparent)]
-struct Owned<'life, T>(&'life mut T);
+pub struct Owned<'life, T>(pub &'life mut T);
 impl<'life, T> Owned<'life, T> {
-    fn defuse(self) -> &'life mut T {
+    pub fn defuse(self) -> &'life mut T {
         let this = ManuallyDrop::new(self);
         unsafe { core::ptr::read(&this.0) }
     }
@@ -51,7 +81,7 @@ impl<'life, T> Drop for Owned<'life, T> {
 }
 
 pub struct ExtStackRef<'life, Init> {
-    inner: Owned<'life, Init>,
+    pub inner: Owned<'life, Init>,
 }
 
 impl<'life, Init> ExtStackRef<'life, Init> {
@@ -89,8 +119,6 @@ mod tests {
         sync::atomic::{AtomicU8, Ordering},
     };
 
-    use crate::ext_stack::ExtStack;
-
     #[test]
     fn correct_drop_amount() {
         static COUNT: AtomicU8 = AtomicU8::new(0);
@@ -102,7 +130,7 @@ mod tests {
         }
         let res = catch_unwind(|| {
             #[allow(unused_variables, unreachable_code)]
-            let stack = ExtStack::extend_for(|cx| {
+            let stack: () = extend_for!(|cx| {
                 let (cx, _) = cx.store(Dropper);
                 let (cx, _) = cx.store(Dropper);
                 panic!();

@@ -35,8 +35,9 @@ impl<Down: Copy> LensTable<Down> {
 }
 
 // TODO: add lifetime
-pub struct Lens<T> {
+#[derive(Clone, Copy)]
+pub struct Lens<'life, T> {
     pub(crate) table_offset: usize,
     pub(crate) store_offset: usize,
-    pub(crate) phantom: PhantomData<T>,
+    pub(crate) phantom: PhantomData<&'life T>,
 }

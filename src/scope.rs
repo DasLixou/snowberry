@@ -7,30 +7,24 @@ pub struct Scope<'scope> {
 }
 
 impl<'scope> Scope<'scope> {
-    pub fn new() -> Self {
-        Self {
+    pub fn new<F, T>(sub: F) -> T
+    where
+        for<'new_scope> F: FnOnce(Scope<'new_scope>) -> T,
+    {
+        let scope = Scope {
             lifetime: PhantomData,
-        }
+        };
+        sub(scope)
     }
 
-    pub fn open<F, T>(sub: F) -> (Self, T)
+    pub fn sub<F, T>(sub: F) -> T
     where
-        F: FnOnce(&'_ mut Self) -> T + 'scope,
+        F: FnOnce(Scope<'scope>) -> T,
     {
-        let mut scope = Scope::new();
-        let t = sub(&mut scope);
-        (scope, t)
-    }
-
-    pub fn sub<'sub, F>(&self, sub: F) -> Scope<'sub>
-    where
-        F: FnOnce(&'_ mut Scope<'sub>) + 'sub,
-        'scope: 'sub,
-        'sub: 'scope,
-    {
-        let mut scope = Scope::new();
-        sub(&mut scope);
-        scope
+        let scope = Scope {
+            lifetime: PhantomData,
+        };
+        sub(scope)
     }
 }
 

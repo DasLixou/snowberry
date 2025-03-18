@@ -1,50 +1,50 @@
 use crate::{
-    composable_::Composable, context::Context, ext_stack::ExtStack, lens_table::LensTable,
-    scope::Scope,
+    composable_::Composable, context::Context, extend_for, lens_table::LensTable, scope::Scope,
 };
 
 pub struct Composition<'scope, C: Composable<'scope>> {
-    scope: Scope<'scope>,
-    stored: ExtStack<C::Store>,
+    stored: C::Store,
 }
 
 impl<'scope, C: Composable<'scope>> Composition<'scope, C> {
-    pub fn root(composable: C) -> Self
+    pub fn root<Env: Copy + 'scope>(scope: Scope<'scope>, composable: C, environment: Env) -> Self
     where
-        C: Composable<'scope, Down = ()>,
+        C: Composable<'scope>,
     {
-        let (scope, stored) = Scope::open(|_scope| {
-            ExtStack::extend_for(|ext_ref| {
+        Composition {
+            stored: extend_for!(|ext_ref| {
                 let lens_table = unsafe { LensTable::root(ext_ref.ptr_mut()) };
                 let context = Context {
+                    scope,
                     store: ext_ref,
                     lens_table,
+                    environment,
                 };
                 let context = composable.compose(context);
                 context.store
-            })
-        });
-        Composition { scope, stored }
+            }),
+        }
     }
 
-    pub fn open<'cx, I, D: Copy + 'scope>(
-        cx: Context<'cx, I, D>,
+    pub fn open<'cx, I, D: Copy + 'cx, E: Copy + 'cx>(
+        scope: Scope<'scope>,
+        cx: Context<'scope, 'cx, I, D, E>,
         composable: C,
-    ) -> (Context<'cx, I, D>, Self)
+    ) -> (Context<'scope, 'cx, I, D, E>, Self)
     where
-        C: Composable<'scope, Down = LensTable<D>>,
+        C: Composable<'scope>,
     {
-        let (scope, stored) = Scope::open(move |_scope| {
-            ExtStack::extend_for(|ext_ref| {
-                let lens_table = unsafe { cx.lens_table.extend(ext_ref.ptr_mut()) };
-                let context = Context {
-                    store: ext_ref,
-                    lens_table,
-                };
-                let context = composable.compose(context);
-                context.store
-            })
+        let stored = extend_for!(|ext_ref| {
+            let lens_table = unsafe { cx.lens_table.extend(ext_ref.ptr_mut()) };
+            let context = Context {
+                scope,
+                store: ext_ref,
+                lens_table,
+                environment: cx.environment,
+            };
+            let context = composable.compose(context);
+            context.store
         });
-        (cx, Composition { scope, stored })
+        (cx, Composition { stored })
     }
 }

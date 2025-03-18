@@ -1,4 +1,4 @@
-use snowberry::{composable, composable_::Composable};
+use snowberry::{composable, composable_::Composable, composition::Composition, scope::Scope};
 
 fn main() {
     let bomb = Bomb("static");
@@ -6,7 +6,7 @@ fn main() {
     let _ = bomb;
 }
 
-fn simple<'l, D: Copy + 'l>() -> impl Composable<'l, Down = D> {
+fn simple<'l>() -> impl Composable<'l> {
     composable!(|cx| {
         let (cx, _) = cx.store(Bomb("42"));
         let (cx, _) = cx.store(Bomb("another one :3"));
@@ -19,7 +19,7 @@ fn simple<'l, D: Copy + 'l>() -> impl Composable<'l, Down = D> {
     })
 }
 
-fn window<'l, D: Copy + 'l>() -> impl Composable<'l, Down = D> {
+fn window<'l>() -> impl Composable<'l> {
     composable!(|cx| {
         let (cx, _) = cx.store(Bomb("..and the window second :>"));
         let (cx, _) = cx.store(Bomb("Uninitialize render cx first.."));
