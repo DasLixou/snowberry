@@ -1,5 +1,5 @@
 [workspace]
-members = ["snowberry_winit"]
+# members = ["snowberry_winit"]
 
 [package]
 name = "snowberry"

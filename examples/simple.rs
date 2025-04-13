@@ -1,35 +1,13 @@
-use snowberry::{composable, composable_::Composable, composition::Composition, scope::Scope};
+use std::marker::PhantomData;
+
+use snowberry::{composable, composable_::Composable, context::Context};
 
 fn main() {
-    let bomb = Bomb("static");
-    snowberry::run_simple!(simple());
-    let _ = bomb;
+    label("Hello").compose(Context { env: PhantomData });
 }
 
-fn simple<'l>() -> impl Composable<'l> {
-    composable!(|cx| {
-        let (cx, _) = cx.store(Bomb("42"));
-        let (cx, _) = cx.store(Bomb("another one :3"));
-        let cx = cx.compose(window());
-
-        let (cx, num) = cx.store("Lenses work :D");
-        println!("{}", cx[num]);
-
-        cx
+fn label(text: &str) -> impl Composable<()> {
+    composable!(move |_cx| {
+        println!("With label: {text}");
     })
-}
-
-fn window<'l>() -> impl Composable<'l> {
-    composable!(|cx| {
-        let (cx, _) = cx.store(Bomb("..and the window second :>"));
-        let (cx, _) = cx.store(Bomb("Uninitialize render cx first.."));
-        cx
-    })
-}
-
-struct Bomb(&'static str);
-impl Drop for Bomb {
-    fn drop(&mut self) {
-        println!("kapow '{}'", self.0);
-    }
 }
