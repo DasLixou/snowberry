@@ -1,5 +1,14 @@
 use std::marker::PhantomData;
 
-pub struct Context<Env> {
-    pub env: PhantomData<Env>,
+use crate::composable_::Composable;
+
+pub struct Context<'cx, Env> {
+    pub env: PhantomData<&'cx Env>,
+}
+
+impl<'cx, Env> Context<'cx, Env> {
+    pub fn compose(self, c: impl Composable<Env>) -> Context<'cx, Env> {
+        c.compose(Context { env: PhantomData });
+        self
+    }
 }

@@ -1,7 +1,7 @@
 use crate::context::Context;
 
 pub trait Composable<Env> {
-    fn compose(self, cx: Context<Env>);
+    fn compose<'cx>(self, cx: Context<'cx, Env>);
 }
 
 #[macro_export]
@@ -16,7 +16,7 @@ macro_rules! composable {
             where
                 F: FnOnce($crate::context::Context<Env>)
             {
-                fn compose(self, cx: $crate::context::Context<Env>) {
+                fn compose<'cx>(self, cx: $crate::context::Context<'cx, Env>) {
                     (self.0)(cx);
                 }
             }
