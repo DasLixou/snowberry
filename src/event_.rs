@@ -1,8 +1,17 @@
+use std::marker::PhantomData;
+
+use imply_hack::Imply;
+
+use crate::environment::WithEnv;
+
 #[macro_export]
 macro_rules! event {
     ($cx:expr) => {{
         struct AnonymousEvent<'cx>($crate::InvariantLifetime<'cx>);
-        unsafe impl<'cx> $crate::event::Event for AnonymousEvent<'cx> {}
+        unsafe impl<'cx, Env> $crate::event_::Event<Env> for AnonymousEvent<'cx> where
+            Env: $crate::environment::WithEnv<$crate::event_::Callchain<Self>>
+        {
+        }
 
         fn life_event<'cx, Env>(
             cx: $crate::context::Context<'cx, Env>,
@@ -14,4 +23,13 @@ macro_rules! event {
     }};
 }
 
-pub unsafe trait Event {}
+pub struct Callchain<Event> {
+    pub phantom: PhantomData<Event>,
+}
+
+pub unsafe trait Event<Env>
+where
+    Self: Sized,
+    Self: Imply<Env, Is: WithEnv<Callchain<Self>>>,
+{
+}

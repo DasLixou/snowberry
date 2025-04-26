@@ -6,6 +6,6 @@ use std::marker::PhantomData;
 pub mod composable_;
 pub mod context;
 pub mod environment;
-pub mod event;
+pub mod event_;
 
 pub type InvariantLifetime<'brand> = PhantomData<fn(&'brand ()) -> &'brand ()>;

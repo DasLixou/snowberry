@@ -3,5 +3,14 @@
 version = 4
 
 [[package]]
+name = "imply-hack"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6fa7b7dfb57cac6c4a9023421dc62a0eb628ad73cd02468271e9d2ae82ef5a62"
+
+[[package]]
 name = "snowberry"
 version = "0.1.0"
+dependencies = [
+ "imply-hack",
+]
