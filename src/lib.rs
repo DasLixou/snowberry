@@ -7,5 +7,6 @@ pub mod composable_;
 pub mod context;
 pub mod environment;
 pub mod event_;
+pub mod event_env;
 
 pub type InvariantLifetime<'brand> = PhantomData<fn(&'brand ()) -> &'brand ()>;

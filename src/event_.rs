@@ -1,18 +1,14 @@
 use std::marker::PhantomData;
 
+use crate::{context::Context, event_env::WithCallback};
 use imply_hack::Imply;
-
-use crate::{
-    context::Context,
-    environment::{Environmentable, WithEnv},
-};
 
 #[macro_export]
 macro_rules! event {
     ($cx:expr) => {{
         struct AnonymousEvent<'cx>($crate::InvariantLifetime<'cx>);
         unsafe impl<'cx, Env> $crate::event_::Event<Env> for AnonymousEvent<'cx> where
-            Env: $crate::environment::WithEnv<$crate::event_::Callchain<Self>>
+            Env: $crate::event_env::WithCallback<$crate::event_::Callchain<Self>>
         {
         }
 
@@ -29,10 +25,12 @@ macro_rules! event {
 pub unsafe trait Event<Env>
 where
     Self: Sized,
-    Self: Imply<Env, Is: WithEnv<Callchain<Self>>>,
+    // Remove the Callback<> wrapper, it's just for now so I can name it easier
+    Self: Imply<Env, Is: WithCallback<Callchain<Self>>>,
 {
     fn dispatch(&self, cx: &Context<'_, Env>) {
-        let x = cx.env.get(); // we need to specialize this more :/
+        let x = cx.env.get();
+        (x)()
     }
 }
 
@@ -46,6 +44,4 @@ impl<Event> Clone for Callchain<Event> {
 }
 impl<Event> Copy for Callchain<Event> {}
 
-impl<Event, F: Copy + Fn()> Environmentable for (Callchain<Event>, F) {
-    type Key = Callchain<Event>;
-}
+// impl<Event, F: Copy + Fn()> Environmentable for (Callchain<Event>, F) {}

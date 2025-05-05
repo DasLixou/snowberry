@@ -1,24 +1,22 @@
 /// Declares a type as usable for environment down-passing in snowberry.
-pub trait Environmentable: Copy {
-    type Key;
-}
+pub trait Environmentable: Copy {}
 
 /// A trait implemented on any tuple that "may have" type `T` somewhere.
 ///
 /// When it has it, `MayHave::Res` is `T`, otherwise it's `Infallible`. \
 /// This is used to not have overlapping implementations,
 /// but two distinct sets of either having or not having.
-pub trait MayHave<Key> {
+pub trait MayHave<E> {
     /// Either `Infallible` or `T`
     type Res;
 
     fn retrieve(&self) -> Self::Res;
 }
 
-pub struct Has<T>(T);
+pub struct Has<T>(pub T);
 pub enum Hasnt {}
 
-impl<Key> MayHave<Key> for () {
+impl<E> MayHave<E> for () {
     type Res = Hasnt;
 
     fn retrieve(&self) -> Self::Res {
@@ -26,7 +24,7 @@ impl<Key> MayHave<Key> for () {
     }
 }
 
-pub trait Find<Key, Down: MayHave<Key>, Res = <Down as MayHave<Key>>::Res> {
+pub trait Find<E, Down: MayHave<E>, Res = <Down as MayHave<E>>::Res> {
     type Output;
 
     fn find(&self) -> Self::Output;
@@ -34,16 +32,16 @@ pub trait Find<Key, Down: MayHave<Key>, Res = <Down as MayHave<Key>>::Res> {
 
 /// A trait which is only implemented for a 2-sized left-recursing tuple
 /// where `T` is included somewhere.
-pub trait WithEnv<T> {
+pub trait WithEnv<E> {
     type Final;
 
     /// Gets the highest `T` in the tuple stack.
     fn get(&self) -> Self::Final;
 }
 
-impl<E: Environmentable, Down> Find<E::Key, Down, Hasnt> for (Down, E)
+impl<E: Environmentable, Down> Find<E, Down, Hasnt> for (Down, E)
 where
-    Down: MayHave<E::Key>,
+    Down: MayHave<E>,
 {
     type Output = Has<E>;
 
@@ -52,9 +50,9 @@ where
     }
 }
 
-impl<E: Environmentable, Down, Cur> Find<E::Key, Down, Has<E>> for (Down, Cur)
+impl<E: Environmentable, Down, Cur> Find<E, Down, Has<E>> for (Down, Cur)
 where
-    Down: MayHave<E::Key>,
+    Down: MayHave<E>,
 {
     type Output = Down::Res;
 
@@ -63,31 +61,21 @@ where
     }
 }
 
-impl<Key, Down, Cur> MayHave<Key> for (Down, Cur)
+impl<E, Down, Cur> MayHave<E> for (Down, Cur)
 where
-    Down: MayHave<Key>,
-    Self: Find<Key, Down>,
+    Down: MayHave<E>,
+    Self: Find<E, Down>,
 {
-    type Res = <Self as Find<Key, Down>>::Output;
+    type Res = <Self as Find<E, Down>>::Output;
 
     fn retrieve(&self) -> Self::Res {
         self.find()
     }
 }
 
-// impl<E: Environmentable, M> WithEnv<E::Key> for M
-// where
-//     M: MayHave<E, Res = Has<E>>,
-// {
-//     fn get(&self) -> E {
-//         self.retrieve().0
-//     }
-// }
-
-// TODO: filter out Hasnt things (prob with a second assoc type in MayHave)
-impl<Key, M> WithEnv<Key> for M
+impl<E, M> WithEnv<E> for M
 where
-    M: MayHave<Key /* , Res = Has<E>*/>,
+    M: MayHave<E, Res = Has<E>>,
 {
     type Final = M::Res;
 
