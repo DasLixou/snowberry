@@ -1,9 +1,48 @@
-use std::marker::PhantomData;
+use std::{
+    any::{TypeId, type_name_of_val},
+    marker::PhantomData,
+};
 
-use snowberry::{composable, composable_::Composable, context::Context, event, event_::Event};
+use snowberry::{
+    composable,
+    composable_::Composable,
+    context::Context,
+    event,
+    event_::{Callchain, Event},
+};
 
 fn main() {
-    label("Hello").compose(Context::<()> { env: PhantomData });
+    let cx = Context::<()> { env: &() };
+    // label("Hello").compose(cx);
+    let (cx, e) = event!(cx);
+    fn ding<'a, F: Fn(), E>(
+        cx: Context<'a, ()>,
+        f: F,
+        _e: &E,
+    ) -> Context<'a, ((), (Callchain<E>, F))> {
+        unsafe { core::mem::transmute::<Context<'_, ()>, Context<'_, ((), (Callchain<E>, F))>>(cx) }
+    }
+    let cx = ding(
+        cx,
+        || {
+            println!("EVENT!! HEHE :D");
+        },
+        &e,
+    );
+    test(
+        (
+            (),
+            (
+                Callchain {
+                    phantom: PhantomData,
+                },
+                || {
+                    println!("EVENT!! HEHE :D");
+                },
+            ),
+        ),
+        e,
+    );
 }
 
 fn label<E>(text: &str) -> impl Composable<E> {
@@ -15,5 +54,11 @@ fn label<E>(text: &str) -> impl Composable<E> {
 }
 
 fn implicit_event<E>(event: impl Event<E>) -> impl Composable<E> {
-    composable!(move |_cx| {})
+    composable!(move |cx| {})
+}
+
+fn test<E>(e: E, event: impl Event<E>) {
+    let (_, callback) = e.get();
+    (callback)();
+    println!("{}", type_name_of_val(&x));
 }
